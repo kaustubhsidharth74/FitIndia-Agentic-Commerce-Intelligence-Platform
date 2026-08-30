@@ -1,0 +1,11 @@
+{
+  "name": "fitindia",
+  "version": "1.0.0",
+  "description": "FitIndia AI Commerce Platform",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend":  "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "echo \"Run 'npm run dev:backend' in one terminal and 'npm run dev:frontend' in another\""
+  }
+}
