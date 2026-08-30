@@ -12,11 +12,6 @@
   ],
   "rootMainFiles": [],
   "pages": {
-    "/": [
-      "static/chunks/webpack.js",
-      "static/chunks/main.js",
-      "static/chunks/pages/index.js"
-    ],
     "/_app": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
@@ -27,10 +22,30 @@
       "static/chunks/main.js",
       "static/chunks/pages/_error.js"
     ],
+    "/audit": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/audit.js"
+    ],
     "/campaign": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",
       "static/chunks/pages/campaign.js"
+    ],
+    "/catalog": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/catalog.js"
+    ],
+    "/customers": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/customers.js"
+    ],
+    "/failures": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/failures.js"
     ]
   },
   "ampFirstPages": []

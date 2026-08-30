@@ -33,7 +33,8 @@ export default function Catalog() {
   const [products, setProducts] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [customerId, setCustomerId] = useState('1');
-  const [buying, setBuying] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [checkingOut, setCheckingOut] = useState(false);
   const [result, setResult] = useState(null);
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState(null);
@@ -82,26 +83,50 @@ export default function Catalog() {
     }
   }
 
-  async function buy(productId) {
-    setBuying(productId);
+  function addToCart(product) {
+    setResult(null);
+    setCart(current => {
+      const existing = current.find(item => item.product_id === product.id);
+      if (existing) {
+        return current.map(item => item.product_id === product.id
+          ? { ...item, quantity: Math.min(item.quantity + 1, product.stock) }
+          : item);
+      }
+      return [...current, { product_id: product.id, name: product.name, price_inr: product.price_inr, stock: product.stock, quantity: 1 }];
+    });
+  }
+
+  function updateCartQuantity(productId, quantity) {
+    setCart(current => current
+      .map(item => item.product_id === productId ? { ...item, quantity: Math.max(0, Math.min(Number(quantity) || 0, item.stock)) } : item)
+      .filter(item => item.quantity > 0));
+  }
+
+  async function checkoutCart() {
+    if (cart.length === 0) return;
+    setCheckingOut(true);
     setResult(null);
     setSyncResult(null);
     try {
-      const res = await fetch(`${API}/razorpay/buy`, {
+      const res = await fetch(`${API}/razorpay/cart`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customer_id: Number(customerId), product_id: productId }),
+        body: JSON.stringify({
+          customer_id: Number(customerId),
+          items: cart.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setResult({ link: data.payment_link, amount: data.amount_inr });
+        setCart([]);
       } else {
         setResult({ error: data.error });
       }
-    } catch (e) {
+    } catch {
       setResult({ error: 'Could not reach backend.' });
     } finally {
-      setBuying(null);
+      setCheckingOut(false);
     }
   }
 
@@ -141,6 +166,34 @@ export default function Catalog() {
           <span className="catalog-customer-hint">
             Also available at <code>GET /api/catalog</code> for AI agents
           </span>
+        </div>
+
+        {/* Cart checkout */}
+        <div className="card" style={{ marginBottom: '2rem', padding: '1rem 1.25rem', borderColor: cart.length ? '#93C5FD' : '#E2E8F0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1rem' }}>Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)} item{cart.reduce((sum, item) => sum + item.quantity, 0) === 1 ? '' : 's'})</h3>
+              <p style={{ margin: '0.25rem 0 0', color: '#6B7280', fontSize: '0.82rem' }}>Add one or more products, then create one payment link.</p>
+            </div>
+            {cart.length > 0 && (
+              <button onClick={checkoutCart} disabled={checkingOut} style={{ background: '#1677C8', color: '#fff', border: 'none', borderRadius: 8, padding: '0.65rem 1rem', fontWeight: 700, cursor: checkingOut ? 'not-allowed' : 'pointer' }}>
+                {checkingOut ? 'Creating payment link...' : `Checkout · ₹${cart.reduce((sum, item) => sum + item.price_inr * item.quantity, 0).toLocaleString('en-IN')}`}
+              </button>
+            )}
+          </div>
+          {cart.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.9rem' }}>
+              {cart.map(item => (
+                <div key={item.product_id} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', padding: '0.4rem 0.55rem', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, fontSize: '0.82rem' }}>
+                  <strong>{item.name}</strong>
+                  <button onClick={() => updateCartQuantity(item.product_id, item.quantity - 1)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontWeight: 700 }}>−</button>
+                  <span>{item.quantity}</span>
+                  <button onClick={() => updateCartQuantity(item.product_id, item.quantity + 1)} disabled={item.quantity >= item.stock} style={{ border: 'none', background: 'transparent', cursor: item.quantity >= item.stock ? 'not-allowed' : 'pointer', fontWeight: 700 }}>+</button>
+                  <button onClick={() => updateCartQuantity(item.product_id, 0)} aria-label={`Remove ${item.name}`} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#DC2626', fontWeight: 700 }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* ── Payment Result Banner ── */}
@@ -251,16 +304,16 @@ export default function Catalog() {
                           </span>
                         </div>
                         <button
-                          onClick={() => buy(p.id)}
-                          disabled={buying === p.id || !p.buyable}
+                          onClick={() => addToCart(p)}
+                          disabled={!p.buyable}
                           className="product-card-btn"
                           style={{
-                            background: buying === p.id
+                            background: !p.buyable
                               ? '#E2E8F0'
                               : `linear-gradient(135deg, ${theme.accent}, ${theme.accent}cc)`,
                           }}
                         >
-                          {buying === p.id ? 'Creating link...' : !p.buyable ? 'Out of Stock' : 'Buy Now →'}
+                          {!p.buyable ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                       </div>
                     </div>

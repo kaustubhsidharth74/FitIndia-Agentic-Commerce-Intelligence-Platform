@@ -78,6 +78,90 @@ router.post('/buy', async (req, res) => {
   }
 });
 
+// POST /api/razorpay/cart — one payment link for one or more catalog products
+// Body: { customer_id, items: [{ product_id, quantity }] }
+router.post('/cart', async (req, res) => {
+  try {
+    const { customer_id, items } = req.body;
+    if (!customer_id || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ success: false, error: 'customer_id and at least one cart item are required' });
+    }
+
+    const db = getDB();
+    const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(customer_id);
+    if (!customer) return res.status(404).json({ success: false, error: 'Customer not found' });
+
+    const consolidated = new Map();
+    for (const item of items) {
+      const productId = Number(item.product_id);
+      const quantity = Number(item.quantity);
+      if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1) {
+        return res.status(400).json({ success: false, error: 'Each cart item needs a valid product_id and positive quantity' });
+      }
+      consolidated.set(productId, (consolidated.get(productId) || 0) + quantity);
+    }
+
+    const cartItems = [];
+    for (const [productId, quantity] of consolidated) {
+      const product = db.prepare('SELECT * FROM products WHERE id = ?').get(productId);
+      if (!product) return res.status(404).json({ success: false, error: `Product ${productId} not found` });
+      if (product.stock < quantity) {
+        return res.status(400).json({ success: false, error: `${product.name}: only ${product.stock} in stock` });
+      }
+      cartItems.push({ product, quantity, total_paise: product.price * quantity });
+    }
+
+    const totalPaise = cartItems.reduce((sum, item) => sum + item.total_paise, 0);
+    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    const createCartOrder = db.transaction(() => {
+      const info = db.prepare(`
+        INSERT INTO orders (customer_id, product_id, quantity, total_paise, status)
+        VALUES (?, NULL, ?, ?, 'pending')
+      `).run(customer_id, totalQuantity, totalPaise);
+      const orderId = info.lastInsertRowid;
+      const insertItem = db.prepare(`
+        INSERT INTO order_items (order_id, product_id, quantity, unit_paise, total_paise)
+        VALUES (?, ?, ?, ?, ?)
+      `);
+      for (const item of cartItems) {
+        insertItem.run(orderId, item.product.id, item.quantity, item.product.price, item.total_paise);
+      }
+      return orderId;
+    });
+    const dbOrderId = createCartOrder();
+    const itemSummary = cartItems.map(item => `${item.product.name} x${item.quantity}`).join(', ');
+
+    const link = await rz.createPaymentLink({
+      amount: totalPaise,
+      description: `FitIndia Cart — ${itemSummary}`.slice(0, 255),
+      customer: { name: customer.name, email: customer.email, contact: customer.phone || '' },
+      notes: { db_order_id: String(dbOrderId), order_type: 'cart', item_count: String(cartItems.length) },
+      dbOrderId,
+    });
+
+    db.prepare(`
+      UPDATE orders SET payment_link = ?, razorpay_order_id = ?, updated_at = datetime('now') WHERE id = ?
+    `).run(link.short_url, link.id, dbOrderId);
+    db.prepare(`
+      INSERT INTO audit_log (agent, action_type, customer_id, order_id, amount_paise, reason, result, metadata)
+      VALUES ('razorpay', 'checkout', ?, ?, ?, ?, 'pending', ?)
+    `).run(customer_id, dbOrderId, totalPaise, `Cart checkout: ${itemSummary}`, JSON.stringify({ items: cartItems.map(item => ({ product_id: item.product.id, name: item.product.name, quantity: item.quantity })) }));
+
+    res.json({
+      success: true,
+      db_order_id: dbOrderId,
+      payment_link: link.short_url,
+      amount_paise: totalPaise,
+      amount_inr: totalPaise / 100,
+      items: cartItems.map(item => ({ product_id: item.product.id, name: item.product.name, quantity: item.quantity, total_inr: item.total_paise / 100 })),
+      mock: rz.MOCK,
+    });
+  } catch (err) {
+    console.error('Cart checkout error:', err.message);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // POST /api/razorpay/payment-link — standalone link (used by agents)
 router.post('/payment-link', async (req, res) => {
   try {
@@ -107,7 +191,12 @@ router.post('/payment-link', async (req, res) => {
 router.get('/orders', (_req, res) => {
   const db     = getDB();
   const orders = db.prepare(`
-    SELECT o.*, c.name AS customer_name, p.name AS product_name
+    SELECT o.*, c.name AS customer_name,
+      COALESCE(p.name, (
+        SELECT group_concat(pr.name, ', ')
+        FROM order_items oi JOIN products pr ON pr.id = oi.product_id
+        WHERE oi.order_id = o.id
+      ), 'Cart order') AS product_name
     FROM orders o
     LEFT JOIN customers c ON o.customer_id = c.id
     LEFT JOIN products  p ON o.product_id  = p.id
@@ -120,7 +209,12 @@ router.get('/orders', (_req, res) => {
 router.get('/orders/:id', (req, res) => {
   const db    = getDB();
   const order = db.prepare(`
-    SELECT o.*, c.name AS customer_name, p.name AS product_name
+    SELECT o.*, c.name AS customer_name,
+      COALESCE(p.name, (
+        SELECT group_concat(pr.name, ', ')
+        FROM order_items oi JOIN products pr ON pr.id = oi.product_id
+        WHERE oi.order_id = o.id
+      ), 'Cart order') AS product_name
     FROM orders o
     LEFT JOIN customers c ON o.customer_id = c.id
     LEFT JOIN products  p ON o.product_id  = p.id

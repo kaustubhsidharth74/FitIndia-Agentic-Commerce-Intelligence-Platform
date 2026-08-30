@@ -46,6 +46,15 @@ async function initDB() {
       updated_at          TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS order_items (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      order_id    INTEGER NOT NULL REFERENCES orders(id),
+      product_id  INTEGER NOT NULL REFERENCES products(id),
+      quantity    INTEGER NOT NULL,
+      unit_paise  INTEGER NOT NULL,
+      total_paise INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS audit_log (
       id           INTEGER PRIMARY KEY AUTOINCREMENT,
       timestamp    TEXT    DEFAULT (datetime('now')),

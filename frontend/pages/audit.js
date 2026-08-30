@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 
 const API = 'http://localhost:4000/api';
 const PER_PAGE = 12;
+const PAYMENT_SYNC_INTERVAL_SECONDS = 10;
 
 const RESULT_COLORS = {
   success: { bg: 'rgba(16,185,129,0.12)', color: '#059669' },
@@ -41,10 +42,11 @@ export default function AuditPage() {
   const [stats, setStats] = useState(null);
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(false);
   const [page, setPage] = useState(1);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState(null);
+  const [secondsUntilSync, setSecondsUntilSync] = useState(PAYMENT_SYNC_INTERVAL_SECONDS);
+  const syncInProgress = useRef(false);
 
   const [filterAgent, setFilterAgent] = useState('');
   const [filterResult, setFilterResult] = useState('');
@@ -70,12 +72,6 @@ export default function AuditPage() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [filterAgent, filterResult, sortBy]);
-
-  useEffect(() => {
-    if (!autoRefresh) return;
-    const t = setInterval(load, 4000);
-    return () => clearInterval(t);
-  }, [autoRefresh, load]);
 
   const sortedLogs = useMemo(() => {
     const sorted = [...logs];
@@ -115,23 +111,48 @@ export default function AuditPage() {
   );
   const pageNumbers = getPageNumbers(currentPage, totalPages);
 
-  async function syncPayments() {
+  const syncPayments = useCallback(async ({ silent = false } = {}) => {
+    if (syncInProgress.current) return;
+    syncInProgress.current = true;
     setSyncing(true);
     setSyncMsg(null);
     try {
       const res = await fetch(`${API}/razorpay/sync-status`, { method: 'POST' });
       const data = await res.json();
+      if (silent) {
+        load();
+        return;
+      }
       setSyncMsg(data.synced > 0
         ? `✓ ${data.synced} payment(s) updated to paid`
         : 'All orders already up to date');
       load();
     } catch {
-      setSyncMsg('Could not reach backend');
+      if (!silent) setSyncMsg('Could not reach backend');
     } finally {
       setSyncing(false);
-      setTimeout(() => setSyncMsg(null), 4000);
+      syncInProgress.current = false;
+      setSecondsUntilSync(PAYMENT_SYNC_INTERVAL_SECONDS);
+      if (!silent) setTimeout(() => setSyncMsg(null), 4000);
     }
-  }
+  }, [load]);
+
+  // Local fallback for webhooks: check Razorpay and refresh the audit trail
+  // every 10 seconds while this page is open.
+  useEffect(() => {
+    const paymentSync = setInterval(
+      () => syncPayments({ silent: true }),
+      PAYMENT_SYNC_INTERVAL_SECONDS * 1000,
+    );
+    const countdown = setInterval(() => {
+      setSecondsUntilSync(seconds => seconds <= 1 ? PAYMENT_SYNC_INTERVAL_SECONDS : seconds - 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(paymentSync);
+      clearInterval(countdown);
+    };
+  }, [syncPayments]);
 
   const selectStyle = {
     background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#1A1A1A',
@@ -159,9 +180,13 @@ export default function AuditPage() {
             >
               {syncing ? 'Syncing…' : 'Sync Payments'}
             </button>
+            <span style={{ fontSize: '0.78rem', color: '#6B7280' }}>
+              {syncing ? 'Auto-syncing payment status…' : `Auto-sync in ${secondsUntilSync}s`}
+            </span>
             {syncMsg && (
               <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: 500 }}>{syncMsg}</span>
             )}
+            {/*
             <button
               onClick={() => setAutoRefresh(v => !v)}
               className={`audit-btn ${autoRefresh ? 'active' : ''}`}
@@ -169,6 +194,7 @@ export default function AuditPage() {
               {autoRefresh ? '⏸ Auto-refresh ON' : '▶ Auto-refresh'}
             </button>
             <button onClick={load} className="audit-btn refresh">Refresh</button>
+            */}
           </div>
         </div>
 
