@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
 // Route all outbound HTTPS through the corporate proxy.
 // We patch https.request directly because axios (used by Razorpay SDK) sets
@@ -30,6 +30,7 @@ const agentRoutes    = require('./routes/agent');
 const catalogRoutes  = require('./routes/catalog');
 const webhookRoutes  = require('./routes/webhook');
 const fraudRoutes    = require('./routes/fraud');
+const configRoutes   = require('./routes/config');
 
 const app  = express();
 const PORT = process.env.PORT || 4000;
@@ -45,6 +46,7 @@ app.use('/api/razorpay', razorpayRoutes);
 app.use('/api/agent',    agentRoutes);
 app.use('/api/catalog',  catalogRoutes);
 app.use('/api/fraud',    fraudRoutes);
+app.use('/api/config',   configRoutes);
 
 // POST /api/buy  — top-level agent-friendly buy endpoint
 app.post('/api/buy', async (req, res) => {

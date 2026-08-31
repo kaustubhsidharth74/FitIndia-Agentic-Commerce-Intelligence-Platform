@@ -1,14 +1,12 @@
 // Razorpay client with mock fallback.
-// Set MOCK_RAZORPAY=true in .env to run without network access.
-// Mock mode: returns realistic fake responses and auto-marks orders paid after 5s.
+// Mock mode is toggled at runtime via POST /api/config — no server restart needed.
 
 const { getDB } = require('./db/database');
+const mockState = require('./config/mockState');
 
-const MOCK = process.env.MOCK_RAZORPAY === 'true';
+const isMock = () => mockState.isMockRazorpay();
 
-if (MOCK) {
-  console.log('[razorpay] MOCK MODE — no real API calls will be made');
-}
+console.log(`[razorpay] Starting in ${isMock() ? 'MOCK' : 'LIVE'} mode`);
 
 function getRealRazorpay() {
   const Razorpay = require('razorpay');
@@ -18,44 +16,10 @@ function getRealRazorpay() {
   });
 }
 
-// Simulate payment captured 5 seconds after link is created
-function mockAutoCapture(linkId, dbOrderId, amountPaise) {
-  setTimeout(() => {
-    try {
-      const db        = getDB();
-      const paymentId = `pay_mock_${Date.now()}`;
-
-      db.prepare(`
-        UPDATE orders
-        SET status = 'paid', razorpay_payment_id = ?, updated_at = datetime('now')
-        WHERE id = ?
-      `).run(paymentId, dbOrderId);
-
-      // Look up customer_id from the order so the audit row is linked
-      const order = db.prepare('SELECT customer_id FROM orders WHERE id = ?').get(dbOrderId);
-
-      db.prepare(`
-        INSERT INTO audit_log (agent, action_type, customer_id, order_id, amount_paise, reason, result, metadata)
-        VALUES ('mock_webhook', 'payment', ?, ?, ?, 'Mock payment auto-captured (test mode)', 'success', ?)
-      `).run(
-        order?.customer_id || null,
-        dbOrderId,
-        amountPaise,
-        JSON.stringify({ event: 'mock.captured', payment_id: paymentId, link_id: linkId }),
-      );
-
-      console.log(`[mock] Auto-captured order #${dbOrderId} — ${paymentId}`);
-    } catch (e) {
-      console.error('[mock] Auto-capture error:', e.message);
-    }
-  }, 5000);
-}
-
 async function createPaymentLink({ amount, description, customer, notes, dbOrderId }) {
-  if (MOCK) {
-    const linkId  = `plink_mock_${Date.now()}`;
+  if (isMock()) {
+    const linkId   = `plink_mock_${Date.now()}`;
     const shortUrl = `http://localhost:4000/mock-pay/${linkId}`;
-    mockAutoCapture(linkId, dbOrderId, amount);
     return { id: linkId, short_url: shortUrl, amount, status: 'created' };
   }
 
@@ -81,29 +45,30 @@ async function createPaymentLink({ amount, description, customer, notes, dbOrder
 }
 
 async function createOrder({ amount, receipt, notes }) {
-  if (MOCK) {
-    return {
-      id:       `order_mock_${Date.now()}`,
-      amount,
-      currency: 'INR',
-      receipt,
-      status:   'created',
-    };
+  if (isMock()) {
+    return { id: `order_mock_${Date.now()}`, amount, currency: 'INR', receipt, status: 'created' };
   }
   const rz = getRealRazorpay();
   return rz.orders.create({ amount, currency: 'INR', receipt, notes: notes || {} });
 }
 
 async function listOrders(count = 10) {
-  if (MOCK) return { items: [], count: 0 };
+  if (isMock()) return { items: [], count: 0 };
   const rz = getRealRazorpay();
   return rz.orders.all({ count });
 }
 
 async function fetchPaymentLink(linkId) {
-  if (MOCK) return null;
+  if (isMock()) return null;
   const rz = getRealRazorpay();
   return rz.paymentLink.fetch(linkId);
 }
 
-module.exports = { createPaymentLink, createOrder, listOrders, fetchPaymentLink, MOCK };
+// MOCK exported as a getter so callers always see the current runtime value
+module.exports = {
+  createPaymentLink,
+  createOrder,
+  listOrders,
+  fetchPaymentLink,
+  get MOCK() { return isMock(); },
+};

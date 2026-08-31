@@ -177,12 +177,41 @@ function useLineSidebarEffect(navRef, itemRefs, collapsed) {
   }, [navRef, kick]);
 }
 
+const API = 'http://localhost:4000/api';
+
 export default function Nav() {
   const router = useRouter();
   const { pathname } = router;
   const { collapsed, setCollapsed } = useContext(SidebarContext);
   const [search, setSearch] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  const [mockRazorpay, setMockRazorpay] = useState(null);
+  const [mockAI, setMockAI] = useState(null);
+  const [mockLoading, setMockLoading] = useState(false);
+  const [mockPanelOpen, setMockPanelOpen] = useState(true);
+
+  useEffect(() => {
+    fetch(`${API}/config`).then(r => r.json()).then(d => {
+      setMockRazorpay(d.mock_razorpay);
+      setMockAI(d.mock_ai);
+    }).catch(() => {});
+  }, []);
+
+  async function toggleMock(key, currentValue) {
+    setMockLoading(true);
+    try {
+      const res = await fetch(`${API}/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: !currentValue }),
+      });
+      const d = await res.json();
+      setMockRazorpay(d.mock_razorpay);
+      setMockAI(d.mock_ai);
+    } finally {
+      setMockLoading(false);
+    }
+  }
   const searchRef = useRef(null);
   const sidebarRef = useRef(null);
   const itemRefs = useRef([]);
@@ -355,6 +384,71 @@ export default function Nav() {
       {q && !hasResults && (
         <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
           No results for &ldquo;{search}&rdquo;
+        </div>
+      )}
+
+      {/* ── Mock Mode Toggle ── */}
+      {mockRazorpay !== null && !collapsed && (
+        <div style={{ margin: '0.5rem 0.75rem 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+          {/* Clickable header */}
+          <button
+            onClick={() => setMockPanelOpen(o => !o)}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '0.5rem 0.75rem', background: 'rgba(255,255,255,0.06)',
+              border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.45)',
+            }}
+          >
+            <span style={{ fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.08em' }}>MOCK MODE</span>
+            <span style={{
+              fontSize: '0.6rem', transition: 'transform 0.25s',
+              display: 'inline-block', transform: mockPanelOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+            }}>▼</span>
+          </button>
+
+          {/* Collapsible body */}
+          <div style={{
+            maxHeight: mockPanelOpen ? 120 : 0,
+            overflow: 'hidden',
+            transition: 'max-height 0.25s ease',
+            background: 'rgba(255,255,255,0.04)',
+          }}>
+            <div style={{ padding: '0.6rem 0.75rem' }}>
+              {/* Razorpay toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>Razorpay</span>
+                <button
+                  onClick={() => toggleMock('mock_razorpay', mockRazorpay)}
+                  disabled={mockLoading}
+                  style={{
+                    background: mockRazorpay ? '#059669' : 'rgba(255,255,255,0.15)',
+                    border: 'none', borderRadius: 20, padding: '0.2rem 0.65rem',
+                    fontSize: '0.7rem', fontWeight: 700, color: '#fff', cursor: 'pointer',
+                    transition: 'background 0.2s', minWidth: 44,
+                  }}
+                >
+                  {mockRazorpay ? 'ON' : 'OFF'}
+                </button>
+              </div>
+
+              {/* AI toggle */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>AI</span>
+                <button
+                  onClick={() => toggleMock('mock_ai', mockAI)}
+                  disabled={mockLoading}
+                  style={{
+                    background: mockAI ? '#059669' : 'rgba(255,255,255,0.15)',
+                    border: 'none', borderRadius: 20, padding: '0.2rem 0.65rem',
+                    fontSize: '0.7rem', fontWeight: 700, color: '#fff', cursor: 'pointer',
+                    transition: 'background 0.2s', minWidth: 44,
+                  }}
+                >
+                  {mockAI ? 'ON' : 'OFF'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

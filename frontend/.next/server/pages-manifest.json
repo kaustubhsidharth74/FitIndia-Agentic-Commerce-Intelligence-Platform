@@ -1,10 +1,8 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
-  "/customers": "pages/customers.js",
-  "/failures": "pages/failures.js",
-  "/audit": "pages/audit.js",
-  "/campaign": "pages/campaign.js",
-  "/catalog": "pages/catalog.js"
+  "/_document": "pages/_document.js",
+  "/catalog": "pages/catalog.js",
+  "/fraud": "pages/fraud.js",
+  "/": "pages/index.js"
 }

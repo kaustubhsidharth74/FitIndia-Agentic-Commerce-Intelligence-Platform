@@ -107,6 +107,7 @@ export default function Catalog() {
     setCheckingOut(true);
     setResult(null);
     setSyncResult(null);
+    setMockOutcome(null);
     try {
       const res = await fetch(`${API}/razorpay/cart`, {
         method: 'POST',
@@ -118,7 +119,7 @@ export default function Catalog() {
       });
       const data = await res.json();
       if (data.success) {
-        setResult({ link: data.payment_link, amount: data.amount_inr });
+        setResult({ link: data.payment_link, amount: data.amount_inr, db_order_id: data.db_order_id, mock: data.mock });
         setCart([]);
       } else {
         setResult({ error: data.error });
@@ -127,6 +128,27 @@ export default function Catalog() {
       setResult({ error: 'Could not reach backend.' });
     } finally {
       setCheckingOut(false);
+    }
+  }
+
+  const [mockOutcome, setMockOutcome] = useState(null); // null | 'success' | 'fail'
+  const [mockLoading, setMockLoading] = useState(false);
+
+  async function resolveMockPayment(outcome) {
+    if (!result?.db_order_id) return;
+    setMockLoading(true);
+    try {
+      const res = await fetch(`${API}/razorpay/mock-pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ db_order_id: result.db_order_id, outcome }),
+      });
+      const data = await res.json();
+      if (data.success) setMockOutcome(outcome);
+    } catch {
+      // ignore
+    } finally {
+      setMockLoading(false);
     }
   }
 
@@ -201,7 +223,60 @@ export default function Catalog() {
           <div className={`catalog-result ${result.error ? 'error' : 'success'}`}>
             {result.error ? (
               <p className="catalog-result-text error">Error: {result.error}</p>
+            ) : result.mock ? (
+              /* ── Mock Payment Simulator ── */
+              <>
+                <div className="catalog-result-row">
+                  <div>
+                    <p className="catalog-result-text success">
+                      Order #{result.db_order_id} created — ₹{result.amount?.toLocaleString('en-IN')}
+                    </p>
+                    <p className="catalog-result-hint">
+                      Mock mode active — choose what happens to this payment:
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#6B7280', background: '#F1F5F9', padding: '0.25rem 0.6rem', borderRadius: 6, border: '1px solid #E2E8F0' }}>
+                    🧪 Mock Mode
+                  </span>
+                </div>
+
+                {mockOutcome ? (
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(5,150,105,0.2)', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    {mockOutcome === 'success' ? (
+                      <>
+                        <span style={{ fontSize: '1.1rem' }}>✅</span>
+                        <span style={{ color: '#059669', fontWeight: 600, fontSize: '0.88rem' }}>Payment marked as paid — go to Failure &amp; Recovery to test retry flow.</span>
+                      </>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '1.1rem' }}>❌</span>
+                        <span style={{ color: '#DC2626', fontWeight: 600, fontSize: '0.88rem' }}>Payment marked as failed — go to <a href="/failures" style={{ color: '#DC2626' }}>Failure &amp; Recovery</a> to run the retry agent.</span>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid rgba(5,150,105,0.2)', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <span style={{ color: '#6B7280', fontSize: '0.82rem' }}>Simulate payment outcome:</span>
+                    <button
+                      onClick={() => resolveMockPayment('success')}
+                      disabled={mockLoading}
+                      style={{ background: '#059669', color: '#fff', fontSize: '0.82rem', fontWeight: 700, padding: '0.45rem 1.1rem', borderRadius: 8, border: 'none', cursor: mockLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      ✅ Payment Succeeds
+                    </button>
+                    <button
+                      onClick={() => resolveMockPayment('fail')}
+                      disabled={mockLoading}
+                      style={{ background: '#DC2626', color: '#fff', fontSize: '0.82rem', fontWeight: 700, padding: '0.45rem 1.1rem', borderRadius: 8, border: 'none', cursor: mockLoading ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                    >
+                      ❌ Payment Fails
+                    </button>
+                    {mockLoading && <span style={{ color: '#6B7280', fontSize: '0.82rem' }}>Processing…</span>}
+                  </div>
+                )}
+              </>
             ) : (
+              /* ── Live / real Razorpay ── */
               <>
                 <div className="catalog-result-row">
                   <div>

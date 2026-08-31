@@ -212,15 +212,15 @@ export default function FraudPage() {
                       }}
                     >
                       <div className="fail-cell fail-product-name">{o.customer_name || '—'}</div>
-                      <div className="fail-cell" style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{o.product_name || '—'}</div>
+                      <div className="fail-cell" style={{ fontSize: '0.81rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.product_name || '—'}</div>
                       <div className="fail-cell fail-center fail-order-id">#{o.id}</div>
                       <div className="fail-cell fail-center"><StatusBadge status={o.status} /></div>
                       <div className="fail-cell fail-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                         <RiskBadge level={item.risk_level} score={item.score} />
                         <ScoreBar score={item.score} />
                       </div>
-                      <div className="fail-cell fail-right fail-amount">₹{(o.total_paise / 100).toLocaleString('en-IN')}</div>
-                      <div className="fail-cell fail-center fail-actions">
+                      <div className="fail-cell fail-amount" style={{ textAlign: 'right' }}>₹{(o.total_paise / 100).toLocaleString('en-IN')}</div>
+                      <div className="fail-cell fail-actions">
                         {!isHeld && item.risk_level !== 'low' && (
                           <button
                             className="fail-btn danger"

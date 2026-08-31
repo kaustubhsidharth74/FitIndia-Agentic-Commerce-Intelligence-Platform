@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import Link from 'next/link';
-
 
 const API = 'http://localhost:4000/api';
 

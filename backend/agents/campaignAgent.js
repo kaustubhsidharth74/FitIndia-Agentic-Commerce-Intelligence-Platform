@@ -5,6 +5,7 @@ const Groq = require('groq-sdk');
 const { HttpsProxyAgent } = require('https-proxy-agent');
 const { getDB } = require('../db/database');
 const { createPaymentLink } = require('../razorpayClient');
+const guardrails = require('../config/guardrails');
 
 const MIN_AGE_HOURS = Number(process.env.CAMPAIGN_MIN_AGE_HOURS ?? 2);
 
@@ -156,13 +157,14 @@ async function runCampaignAgent() {
       SELECT COUNT(*) AS n FROM audit_log WHERE action_type = 'campaign' AND order_id = ?
     `).get(order.id)?.n || 0;
 
-    if (priorReminders >= 3) {
+    const maxReminders = guardrails.get().max_reminders_per_order;
+    if (priorReminders >= maxReminders) {
       campaignResults.push({
         order_id: order.id,
         customer: order.customer_name,
         product:  order.product_name,
         status:   'skipped',
-        reason:   'Max reminders (3) already sent',
+        reason:   `Max reminders (${maxReminders}) already sent`,
       });
       continue;
     }

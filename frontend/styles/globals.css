@@ -3613,12 +3613,22 @@ h3 { font-size: 1rem; font-weight: 600; }
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 .fail-scenario-card:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
   border-color: var(--border-active);
+  box-shadow: none;
   transform: translateY(-1px);
+}
+.fail-scenario-card.active:hover {
+  background: var(--bg-elevated);
+  box-shadow: 0 0 0 2px rgba(22, 119, 200, 0.25);
 }
 .fail-scenario-card.active {
   border-color: var(--accent-sky);
-  box-shadow: 0 0 16px rgba(22, 119, 200, 0.1);
+  box-shadow: 0 0 0 2px rgba(22, 119, 200, 0.25);
+}
+.fail-scenario-card.active .fail-scenario-title {
+  color: var(--accent-sky);
 }
 .fail-scenario-icon {
   width: 40px;
@@ -3651,38 +3661,44 @@ h3 { font-size: 1rem; font-weight: 600; }
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
+/* 7 columns: Customer | Product | Order # | Status | Risk Score | Amount | Actions */
+.fail-col-template {
+  grid-template-columns: 1.8fr 1fr 90px 120px 170px 110px 110px;
+}
 .fail-thead {
   display: grid;
-  grid-template-columns: 2fr 90px 100px 110px 180px;
+  grid-template-columns: 1.8fr 1fr 90px 120px 170px 110px 110px;
   align-items: center;
-  padding: 0.8rem 1.5rem;
-  background: rgba(30, 58, 110, 0.12);
+  padding: 0.75rem 1.5rem;
+  background: rgba(30, 58, 110, 0.10);
   border-bottom: 1px solid var(--border-subtle);
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
+  gap: 0.5rem;
 }
 .fail-row {
   display: grid;
-  grid-template-columns: 2fr 90px 100px 110px 180px;
+  grid-template-columns: 1.8fr 1fr 90px 120px 170px 110px 110px;
   align-items: center;
-  padding: 0.9rem 1.5rem;
-  border-bottom: 1px solid rgba(30, 58, 110, 0.1);
+  padding: 0.85rem 1.5rem;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(30, 58, 110, 0.08);
   transition: background 0.15s ease;
   animation: card-enter 0.35s ease-out both;
 }
 .fail-row:hover {
-  background: rgba(22, 119, 200, 0.03);
+  background: rgba(22, 119, 200, 0.04);
 }
-.fail-cell { font-size: 0.88rem; color: var(--text-secondary); }
-.fail-center { text-align: center; }
-.fail-right { text-align: right; }
-.fail-product-name { font-weight: 600; color: var(--text-primary); font-size: 0.92rem; }
-.fail-order-id { font-family: monospace; color: var(--text-muted); font-size: 0.82rem; }
-.fail-amount { font-weight: 700; color: var(--accent-sky); font-variant-numeric: tabular-nums; }
-.fail-actions { display: flex; gap: 0.4rem; justify-content: center; flex-wrap: wrap; }
+.fail-cell { font-size: 0.875rem; color: var(--text-secondary); min-width: 0; }
+.fail-center { text-align: center; justify-self: center; width: 100%; }
+.fail-right { text-align: right; justify-self: end; width: 100%; }
+.fail-product-name { font-weight: 600; color: var(--text-primary); font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fail-order-id { font-family: monospace; color: var(--text-muted); font-size: 0.82rem; text-align: center; }
+.fail-amount { font-weight: 700; color: var(--accent-sky); font-variant-numeric: tabular-nums; font-size: 0.9rem; }
+.fail-actions { display: flex; gap: 0.4rem; justify-content: center; align-items: center; flex-wrap: wrap; }
 .fail-empty {
   padding: 2.5rem 1.5rem;
   text-align: center;
@@ -3799,5 +3815,5 @@ h3 { font-size: 1rem; font-weight: 600; }
   .fail-header { flex-direction: column; align-items: flex-start; gap: 0.75rem; }
   .fail-stats-row { grid-template-columns: repeat(2, 1fr); }
   .fail-scenario-options { grid-template-columns: 1fr; }
-  .fail-thead, .fail-row { grid-template-columns: 1.5fr 70px 80px 90px 140px; font-size: 0.8rem; padding: 0.7rem 1rem; }
+  .fail-thead, .fail-row { grid-template-columns: 1.4fr 0.8fr 70px 90px 140px 85px 85px; font-size: 0.76rem; padding: 0.65rem 1rem; gap: 0.35rem; }
 }

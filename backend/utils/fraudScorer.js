@@ -18,7 +18,7 @@ function scoreOrder(order, allCustomerOrders, recentFailures, avgOrderValue) {
   }
 
   // Signal 2: velocity — 3+ orders from same customer within 1 hour
-  const windowStart = new Date(new Date(order.created_at + 'Z') - VELOCITY_WINDOW_MS).toISOString();
+  const windowStart = new Date(new Date(order.created_at.replace(' ', 'T') + 'Z') - VELOCITY_WINDOW_MS).toISOString();
   const recentOrders = allCustomerOrders.filter(o =>
     o.id !== order.id && o.created_at >= windowStart.replace('T', ' ').slice(0, 19)
   );
@@ -65,7 +65,7 @@ function getRecentFailures(db, customerId, beforeOrderId) {
   const order = db.prepare('SELECT created_at FROM orders WHERE id = ?').get(beforeOrderId);
   if (!order) return 0;
 
-  const windowStart = new Date(new Date(order.created_at + 'Z') - VELOCITY_WINDOW_MS)
+  const windowStart = new Date(new Date(order.created_at.replace(' ', 'T') + 'Z') - VELOCITY_WINDOW_MS)
     .toISOString().replace('T', ' ').slice(0, 19);
 
   const row = db.prepare(`
@@ -81,7 +81,12 @@ function scoreAllOrders() {
   const avgOrderValue = getAverageOrderValue(db);
 
   const orders = db.prepare(`
-    SELECT o.*, c.type AS customer_type, c.name AS customer_name, p.name AS product_name
+    SELECT o.*, c.type AS customer_type, c.name AS customer_name,
+           COALESCE(p.name, (
+             SELECT group_concat(pr.name, ', ')
+             FROM order_items oi JOIN products pr ON pr.id = oi.product_id
+             WHERE oi.order_id = o.id
+           ), 'Cart Order') AS product_name
     FROM orders o
     LEFT JOIN customers c ON c.id = o.customer_id
     LEFT JOIN products  p ON p.id = o.product_id
@@ -109,7 +114,12 @@ function scoreSingleOrder(orderId) {
   const avgOrderValue = getAverageOrderValue(db);
 
   const order = db.prepare(`
-    SELECT o.*, c.type AS customer_type, c.name AS customer_name, p.name AS product_name
+    SELECT o.*, c.type AS customer_type, c.name AS customer_name,
+           COALESCE(p.name, (
+             SELECT group_concat(pr.name, ', ')
+             FROM order_items oi JOIN products pr ON pr.id = oi.product_id
+             WHERE oi.order_id = o.id
+           ), 'Cart Order') AS product_name
     FROM orders o
     LEFT JOIN customers c ON c.id = o.customer_id
     LEFT JOIN products  p ON p.id = o.product_id

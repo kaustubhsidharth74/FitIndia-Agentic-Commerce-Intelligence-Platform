@@ -49,14 +49,16 @@ router.post('/', (req, res) => {
       WHERE razorpay_order_id = ?
     `).run(payment.id, pl.id);
 
+    const paidOrder = db.prepare('SELECT id, customer_id FROM orders WHERE razorpay_order_id = ?').get(pl.id);
     db.prepare(`
-      INSERT INTO audit_log (agent, action_type, amount_paise, result, metadata)
-      VALUES ('webhook', 'payment', ?, 'success', ?)
-    `).run(payment.amount, JSON.stringify({
-      event:          'payment_link.paid',
-      payment_id:     payment.id,
-      payment_link_id: pl.id,
-    }));
+      INSERT INTO audit_log (agent, action_type, customer_id, order_id, amount_paise, result, metadata)
+      VALUES ('webhook', 'payment', ?, ?, ?, 'success', ?)
+    `).run(
+      paidOrder?.customer_id ?? null,
+      paidOrder?.id ?? null,
+      payment.amount,
+      JSON.stringify({ event: 'payment_link.paid', payment_id: payment.id, payment_link_id: pl.id }),
+    );
 
     console.log(`  ✓ Payment link ${pl.id} paid — ₹${payment.amount / 100}`);
   }
@@ -74,14 +76,16 @@ router.post('/', (req, res) => {
       WHERE razorpay_order_id = ?
     `).run(payment.id, payment.order_id);
 
+    const capturedOrder = db.prepare('SELECT id, customer_id FROM orders WHERE razorpay_order_id = ?').get(payment.order_id);
     db.prepare(`
-      INSERT INTO audit_log (agent, action_type, amount_paise, result, metadata)
-      VALUES ('webhook', 'payment', ?, 'success', ?)
-    `).run(payment.amount, JSON.stringify({
-      event:      'payment.captured',
-      payment_id: payment.id,
-      order_id:   payment.order_id,
-    }));
+      INSERT INTO audit_log (agent, action_type, customer_id, order_id, amount_paise, result, metadata)
+      VALUES ('webhook', 'payment', ?, ?, ?, 'success', ?)
+    `).run(
+      capturedOrder?.customer_id ?? null,
+      capturedOrder?.id ?? null,
+      payment.amount,
+      JSON.stringify({ event: 'payment.captured', payment_id: payment.id, order_id: payment.order_id }),
+    );
 
     console.log(`  ✓ Payment ${payment.id} captured — ₹${payment.amount / 100}`);
   }

@@ -77,8 +77,7 @@ export default function ChatCheckout() {
               <h3 style={{ marginBottom: '0.5rem', fontSize: '0.95rem' }}>Mode</h3>
               <p style={{ color: '#6B7280', fontSize: '0.82rem', lineHeight: 1.7 }}>
                 <span style={{ color: process.env.NEXT_PUBLIC_MOCK_AI === 'false' ? '#059669' : '#D97706' }}>
-                  {/* Shows mock status */}
-                  AI: Mock mode
+                  AI: {process.env.NEXT_PUBLIC_MOCK_AI === 'false' ? 'Claude (live)' : 'Mock mode'}
                 </span>
                 <br />
                 Set <code>MOCK_AI=false</code> + real Anthropic key for Claude.

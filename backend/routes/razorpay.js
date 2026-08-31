@@ -1,7 +1,7 @@
 const express = require('express');
 const { getDB } = require('../db/database');
 const rz = require('../razorpayClient');
-const { fetchPaymentLink } = require('../razorpayClient');
+const { fetchPaymentLink } = rz;
 
 const router = express.Router();
 
@@ -113,22 +113,26 @@ router.post('/cart', async (req, res) => {
 
     const totalPaise = cartItems.reduce((sum, item) => sum + item.total_paise, 0);
     const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
-    const createCartOrder = db.transaction(() => {
+    let dbOrderId;
+    db.exec('BEGIN');
+    try {
       const info = db.prepare(`
         INSERT INTO orders (customer_id, product_id, quantity, total_paise, status)
         VALUES (?, NULL, ?, ?, 'pending')
       `).run(customer_id, totalQuantity, totalPaise);
-      const orderId = info.lastInsertRowid;
+      dbOrderId = info.lastInsertRowid;
       const insertItem = db.prepare(`
         INSERT INTO order_items (order_id, product_id, quantity, unit_paise, total_paise)
         VALUES (?, ?, ?, ?, ?)
       `);
       for (const item of cartItems) {
-        insertItem.run(orderId, item.product.id, item.quantity, item.product.price, item.total_paise);
+        insertItem.run(dbOrderId, item.product.id, item.quantity, item.product.price, item.total_paise);
       }
-      return orderId;
-    });
-    const dbOrderId = createCartOrder();
+      db.exec('COMMIT');
+    } catch (txErr) {
+      try { db.exec('ROLLBACK'); } catch (_) {}
+      throw txErr;
+    }
     const itemSummary = cartItems.map(item => `${item.product.name} x${item.quantity}`).join(', ');
 
     const link = await rz.createPaymentLink({
@@ -281,6 +285,35 @@ router.post('/sync-status', async (req, res) => {
   }
 
   res.json({ success: true, synced, checked: pendingOrders.length, results });
+});
+
+// POST /api/razorpay/mock-pay — manually resolve a mock payment as success or failure
+// Body: { db_order_id, outcome: 'success' | 'fail' }
+router.post('/mock-pay', (req, res) => {
+  if (!rz.MOCK) return res.status(400).json({ success: false, error: 'Only available in mock mode' });
+  const { db_order_id, outcome = 'success' } = req.body;
+  if (!db_order_id) return res.status(400).json({ success: false, error: 'db_order_id required' });
+
+  const db = getDB();
+  const order = db.prepare('SELECT * FROM orders WHERE id = ?').get(db_order_id);
+  if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+
+  if (outcome === 'success') {
+    const paymentId = `pay_mock_${Date.now()}`;
+    db.prepare(`UPDATE orders SET status='paid', razorpay_payment_id=?, updated_at=datetime('now') WHERE id=?`).run(paymentId, db_order_id);
+    db.prepare(`
+      INSERT INTO audit_log (agent, action_type, customer_id, order_id, amount_paise, reason, result, metadata)
+      VALUES ('mock_webhook', 'payment', ?, ?, ?, 'Mock payment captured (manual)', 'success', ?)
+    `).run(order.customer_id, db_order_id, order.total_paise, JSON.stringify({ event: 'mock.captured', payment_id: paymentId }));
+    res.json({ success: true, status: 'paid', payment_id: paymentId });
+  } else {
+    db.prepare(`UPDATE orders SET status='failed', updated_at=datetime('now') WHERE id=?`).run(db_order_id);
+    db.prepare(`
+      INSERT INTO audit_log (agent, action_type, customer_id, order_id, amount_paise, reason, result, metadata)
+      VALUES ('retry_agent', 'payment_failed', ?, ?, ?, 'Mock payment failed (manual simulation)', 'failed', ?)
+    `).run(order.customer_id, db_order_id, order.total_paise, JSON.stringify({ simulated: true }));
+    res.json({ success: true, status: 'failed' });
+  }
 });
 
 module.exports = router;

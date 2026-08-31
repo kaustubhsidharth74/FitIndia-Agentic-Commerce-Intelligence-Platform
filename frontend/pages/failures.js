@@ -49,6 +49,8 @@ export default function FailuresPage() {
   const [retryResult, setRetryResult] = useState({});
   const [running, setRunning] = useState({});
   const [forceRetryFail, setForceRetryFail] = useState(false);
+  const [retryMockOutcome, setRetryMockOutcome] = useState({});
+  const [retryMockLoading, setRetryMockLoading] = useState({});
 
   async function fetchOrders() {
     const res = await fetch(`${API}/razorpay/orders`);
@@ -59,8 +61,8 @@ export default function FailuresPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  const sureshOrders = orders.filter(o => o.customer_name === 'Suresh Reddy');
-  const otherFailed = orders.filter(o => o.status === 'failed' && o.customer_name !== 'Suresh Reddy');
+  const sureshOrders = orders;
+  const otherFailed = orders.filter(o => o.status === 'failed');
   const failedCount = orders.filter(o => o.status === 'failed').length;
 
   async function simulateFailure(orderId) {
@@ -73,6 +75,21 @@ export default function FailuresPage() {
     setSimResult(r => ({ ...r, [orderId]: data }));
     setRunning(r => ({ ...r, [`sim_${orderId}`]: false }));
     await fetchOrders();
+  }
+
+  async function resolveMockRetry(orderId, outcome) {
+    setRetryMockLoading(l => ({ ...l, [orderId]: true }));
+    try {
+      await fetch(`${API}/razorpay/mock-pay`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ db_order_id: orderId, outcome }),
+      });
+      setRetryMockOutcome(o => ({ ...o, [orderId]: outcome }));
+      await fetchOrders();
+    } finally {
+      setRetryMockLoading(l => ({ ...l, [orderId]: false }));
+    }
   }
 
   async function runRetry(orderId) {
@@ -107,7 +124,7 @@ export default function FailuresPage() {
           {[
             { label: 'Total Orders', value: orders.length, color: '#1677C8' },
             { label: 'Failed', value: failedCount, color: '#DC2626' },
-            { label: "Suresh's Orders", value: sureshOrders.length, color: '#8B5CF6' },
+            { label: 'Total Customers', value: [...new Set(orders.map(o => o.customer_name))].length, color: '#8B5CF6' },
             { label: 'Other Failed', value: otherFailed.length, color: '#FB923C' },
           ].map(s => (
             <div key={s.label} className="fail-stat-card">
@@ -146,30 +163,41 @@ export default function FailuresPage() {
               onClick={() => setForceRetryFail(false)}
             >
               <div className="fail-scenario-icon" style={{ background: 'rgba(52,211,153,0.1)', color: '#059669' }}>✓</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div className="fail-scenario-title">Retry Succeeds</div>
                 <div className="fail-scenario-desc">New payment link issued, order recovers</div>
               </div>
+              {!forceRetryFail && (
+                <span style={{ marginLeft: 'auto', background: '#1677C8', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 20 }}>
+                  ✓ Selected
+                </span>
+              )}
             </button>
             <button
               className={`fail-scenario-card ${forceRetryFail ? 'active' : ''}`}
               onClick={() => setForceRetryFail(true)}
             >
               <div className="fail-scenario-icon" style={{ background: 'rgba(251,146,60,0.1)', color: '#fb923c' }}>⚠</div>
-              <div>
+              <div style={{ flex: 1 }}>
                 <div className="fail-scenario-title">Retry Also Fails</div>
                 <div className="fail-scenario-desc">Merchant alert raised on dashboard</div>
               </div>
+              {forceRetryFail && (
+                <span style={{ marginLeft: 'auto', background: '#1677C8', color: '#fff', fontSize: '0.7rem', fontWeight: 700, padding: '0.2rem 0.55rem', borderRadius: 20 }}>
+                  ✓ Selected
+                </span>
+              )}
             </button>
           </div>
         </div>
 
         {/* ── Orders Table ── */}
         <div className="fail-orders-section">
-          <h3 className="fail-section-label">Suresh Reddy's Orders</h3>
+          <h3 className="fail-section-label">All Orders</h3>
           <div className="fail-table-wrap">
             <div className="fail-thead">
               <span>Product</span>
+              <span>Customer</span>
               <span className="fail-center">Order #</span>
               <span className="fail-center">Status</span>
               <span className="fail-right">Amount</span>
@@ -179,7 +207,7 @@ export default function FailuresPage() {
             {loading ? (
               <div className="fail-empty">Loading orders...</div>
             ) : sureshOrders.length === 0 ? (
-              <div className="fail-empty">No orders found for Suresh Reddy.</div>
+              <div className="fail-empty">No orders found.</div>
             ) : (
               sureshOrders.map((o, i) => (
                 <div key={o.id}>
@@ -187,17 +215,23 @@ export default function FailuresPage() {
                     <div className="fail-cell-product">
                       <span className="fail-product-name">{o.product_name}</span>
                     </div>
+                    <div className="fail-cell" style={{ color: '#6B7280', fontSize: '0.82rem' }}>{o.customer_name}</div>
                     <div className="fail-cell fail-center fail-order-id">#{o.id}</div>
                     <div className="fail-cell fail-center"><StatusBadge status={o.status} /></div>
                     <div className="fail-cell fail-right fail-amount">₹{(o.total_paise / 100).toLocaleString('en-IN')}</div>
                     <div className="fail-cell fail-center fail-actions">
-                      {o.status !== 'failed' && (
+                      {o.status === 'pending' && (
                         <button
                           className="fail-btn danger"
                           disabled={running[`sim_${o.id}`]}
                           onClick={() => simulateFailure(o.id)}
                         >
                           {running[`sim_${o.id}`] ? 'Simulating...' : 'Simulate Failure'}
+                        </button>
+                      )}
+                      {o.status === 'paid' && (
+                        <button disabled style={{ background: '#059669', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.9rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'default', opacity: 0.85 }}>
+                          Simulate Success
                         </button>
                       )}
                       {(o.status === 'failed' || simResult[o.id]?.success) && (
@@ -227,9 +261,35 @@ export default function FailuresPage() {
                         {retryResult[o.id].success ? '✓ Retry succeeded' : retryResult[o.id].alerted ? '⚠ Merchant alerted' : '✗ Retry failed'}
                       </div>
                       {retryResult[o.id].payment_link && (
-                        <a href={retryResult[o.id].payment_link} target="_blank" rel="noreferrer" className="fail-result-link">
-                          New payment link →
-                        </a>
+                        retryResult[o.id].payment_link.includes('mock-pay') ? (
+                          retryMockOutcome[o.id] ? (
+                            <div style={{ marginTop: '0.5rem', fontSize: '0.83rem', fontWeight: 600, color: retryMockOutcome[o.id] === 'success' ? '#059669' : '#DC2626' }}>
+                              {retryMockOutcome[o.id] === 'success' ? '✅ Payment marked as paid' : '❌ Payment failed again — merchant alerted'}
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.78rem', color: '#6B7280' }}>New link ready — simulate outcome:</span>
+                              <button
+                                onClick={() => resolveMockRetry(o.id, 'success')}
+                                disabled={retryMockLoading[o.id]}
+                                style={{ background: '#059669', color: '#fff', fontSize: '0.78rem', fontWeight: 700, padding: '0.3rem 0.8rem', borderRadius: 6, border: 'none', cursor: 'pointer' }}
+                              >
+                                ✅ Succeeds
+                              </button>
+                              <button
+                                onClick={() => resolveMockRetry(o.id, 'fail')}
+                                disabled={retryMockLoading[o.id]}
+                                style={{ background: '#DC2626', color: '#fff', fontSize: '0.78rem', fontWeight: 700, padding: '0.3rem 0.8rem', borderRadius: 6, border: 'none', cursor: 'pointer' }}
+                              >
+                                ❌ Fails Again
+                              </button>
+                            </div>
+                          )
+                        ) : (
+                          <a href={retryResult[o.id].payment_link} target="_blank" rel="noreferrer" className="fail-result-link">
+                            New payment link →
+                          </a>
+                        )
                       )}
                       <StepLog steps={retryResult[o.id].steps} />
                     </div>
@@ -240,38 +300,6 @@ export default function FailuresPage() {
           </div>
         </div>
 
-        {/* ── Other Failed Orders ── */}
-        {otherFailed.length > 0 && (
-          <div className="fail-orders-section">
-            <h3 className="fail-section-label">Other Failed Orders</h3>
-            <div className="fail-table-wrap">
-              <div className="fail-thead">
-                <span>Customer</span>
-                <span>Product</span>
-                <span className="fail-center">Order #</span>
-                <span className="fail-right">Amount</span>
-                <span className="fail-center">Action</span>
-              </div>
-              {otherFailed.map((o, i) => (
-                <div key={o.id} className="fail-row" style={{ animationDelay: `${0.05 + i * 0.05}s` }}>
-                  <div className="fail-cell fail-product-name">{o.customer_name}</div>
-                  <div className="fail-cell">{o.product_name}</div>
-                  <div className="fail-cell fail-center fail-order-id">#{o.id}</div>
-                  <div className="fail-cell fail-right fail-amount">₹{(o.total_paise / 100).toLocaleString('en-IN')}</div>
-                  <div className="fail-cell fail-center">
-                    <button
-                      className="fail-btn retry"
-                      disabled={running[`retry_${o.id}`]}
-                      onClick={() => runRetry(o.id)}
-                    >
-                      {running[`retry_${o.id}`] ? 'Retrying...' : 'Retry →'}
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

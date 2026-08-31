@@ -14,7 +14,7 @@ export default function ProductCard({ product }) {
       )}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '1.25rem', fontWeight: 700, color: '#1677C8' }}>
-          ₹{product.price_rupees ?? (product.price / 100)}
+          ₹{product.price_inr ?? (product.price_paise / 100)}
         </span>
         <span style={{ fontSize: '0.8rem', color: '#9CA3AF' }}>
           Stock: {product.stock}

@@ -4,17 +4,20 @@
 
 const { getDB } = require('../db/database');
 const { createPaymentLink } = require('../razorpayClient');
+const guardrails = require('../config/guardrails');
 
-const MOCK_AI = process.env.MOCK_AI === 'true';
+const mockState = require('../config/mockState');
+const isMockAI = () => mockState.isMockAI();
 
 // ── Simulate a payment failure ────────────────────────────────────────────────
 async function simulatePaymentFailure({ orderId }) {
   const db    = getDB();
   const order = db.prepare(`
-    SELECT o.*, c.name AS customer_name, c.email, p.name AS product_name, p.price AS unit_price
+    SELECT o.*, c.name AS customer_name, c.email,
+           COALESCE(p.name, 'Cart Order') AS product_name, p.price AS unit_price
     FROM orders o
     JOIN customers c ON o.customer_id = c.id
-    JOIN products  p ON o.product_id  = p.id
+    LEFT JOIN products p ON o.product_id = p.id
     WHERE o.id = ?
   `).get(orderId);
 
@@ -129,16 +132,20 @@ async function retryOrder({ order, forceRetryFail, db }) {
 // body: { order_id?, force_retry_fail? }
 // If order_id omitted → finds all failed orders with < 1 retry
 async function runRetryAgent({ orderId, forceRetryFail = false } = {}) {
+  if (!guardrails.get().retry_enabled) {
+    return { success: false, error: 'Retries are disabled by merchant guardrails' };
+  }
+
   const db = getDB();
 
   let failedOrders;
   if (orderId) {
     const o = db.prepare(`
       SELECT o.*, c.name AS customer_name, c.email, c.phone,
-             p.name AS product_name
+             COALESCE(p.name, 'Cart Order') AS product_name
       FROM orders o
       JOIN customers c ON o.customer_id = c.id
-      JOIN products  p ON o.product_id  = p.id
+      LEFT JOIN products p ON o.product_id = p.id
       WHERE o.id = ? AND o.status = 'failed'
     `).get(orderId);
     if (!o) return { success: false, error: `Order #${orderId} not found or not in failed state` };
@@ -146,10 +153,10 @@ async function runRetryAgent({ orderId, forceRetryFail = false } = {}) {
   } else {
     failedOrders = db.prepare(`
       SELECT o.*, c.name AS customer_name, c.email, c.phone,
-             p.name AS product_name
+             COALESCE(p.name, 'Cart Order') AS product_name
       FROM orders o
       JOIN customers c ON o.customer_id = c.id
-      JOIN products  p ON o.product_id  = p.id
+      LEFT JOIN products p ON o.product_id = p.id
       WHERE o.status = 'failed'
     `).all();
   }
@@ -160,15 +167,20 @@ async function runRetryAgent({ orderId, forceRetryFail = false } = {}) {
 
   const results = [];
   for (const order of failedOrders) {
-    const retries = getRetryCount(db, order.id);
-    if (retries >= 1) {
-      results.push({
-        order_id:      order.id,
-        customer_name: order.customer_name,
-        skipped:       true,
-        reason:        'Already retried once — merchant alert should have been raised',
-      });
-      continue;
+    // In batch mode (no specific orderId), skip orders already retried once.
+    // In manual mode (orderId provided), always allow retry so the demo can
+    // be run multiple times on the same order.
+    if (!orderId) {
+      const retries = getRetryCount(db, order.id);
+      if (retries >= 1) {
+        results.push({
+          order_id:      order.id,
+          customer_name: order.customer_name,
+          skipped:       true,
+          reason:        'Already retried once — merchant alert should have been raised',
+        });
+        continue;
+      }
     }
 
     const result = await retryOrder({ order, forceRetryFail, db });

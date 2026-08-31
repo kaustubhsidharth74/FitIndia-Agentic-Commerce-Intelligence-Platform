@@ -6,7 +6,7 @@
 // UPI:        success@razorpay  (always succeeds in test mode)
 // UPI fail:   failure@razorpay
 
-require('dotenv').config({ path: '../.env' });
+require('dotenv').config({ path: '../../.env' });
 
 if (process.env.HTTPS_PROXY) {
   const https = require('https');
