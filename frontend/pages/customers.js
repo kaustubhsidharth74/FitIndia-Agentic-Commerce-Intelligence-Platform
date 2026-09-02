@@ -255,7 +255,8 @@ export default function Customers() {
                               <div key={o.id} className="cust-order-row">
                                 <span className="cust-order-product">{o.product_name || 'Unknown'}</span>
                                 <span className="cust-order-date">
-                                  {new Date(o.created_at).toLocaleString('en-IN', {
+                                  {new Date(o.created_at + 'Z').toLocaleString('en-IN', {
+                                    timeZone: 'Asia/Kolkata',
                                     day: '2-digit', month: 'short', year: 'numeric',
                                     hour: '2-digit', minute: '2-digit', hour12: true,
                                   })}

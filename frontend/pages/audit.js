@@ -276,7 +276,7 @@ export default function AuditPage() {
                   <tr key={log.id} style={{ opacity: loading ? 0.5 : 1 }}>
                     <td style={{ paddingLeft: '1.25rem', color: '#9CA3AF', fontSize: '0.8rem' }}>{log.id}</td>
                     <td style={{ whiteSpace: 'nowrap', color: '#6B7280', fontSize: '0.82rem' }}>
-                      {new Date(log.timestamp).toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'medium' })}
+                      {new Date(log.timestamp + 'Z').toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'short', timeStyle: 'medium' })}
                     </td>
                     <td>
                       <span className="audit-agent-tag">{log.agent}</span>
