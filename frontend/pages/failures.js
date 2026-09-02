@@ -111,8 +111,8 @@ export default function FailuresPage() {
         {/* ── Header ── */}
         <div className="fail-header">
           <div>
-            <h1 className="fail-title">Failure & Recovery</h1>
-            <p className="fail-subtitle">
+            <h1 className="page-title">Failure & Recovery</h1>
+            <p className="page-subtitle">
               Simulate payment failures, trigger the retry agent, and watch merchant alerts fire.
             </p>
           </div>

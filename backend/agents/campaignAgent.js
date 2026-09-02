@@ -2,7 +2,6 @@
 // Flow: scan abandoned carts → AI personalizes message → send reminder payment links → track conversions → audit log
 
 const Groq = require('groq-sdk');
-const { HttpsProxyAgent } = require('https-proxy-agent');
 const { getDB } = require('../db/database');
 const { createPaymentLink } = require('../razorpayClient');
 const guardrails = require('../config/guardrails');
@@ -12,10 +11,7 @@ const MIN_AGE_HOURS = Number(process.env.CAMPAIGN_MIN_AGE_HOURS ?? 2);
 function makeGroqClient() {
   const key = process.env.GROQ_API_KEY;
   if (!key || key === 'your_groq_api_key_here') return null;
-  const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY;
-  const opts = { apiKey: key };
-  if (proxyUrl) opts.httpAgent = new HttpsProxyAgent(proxyUrl);
-  return new Groq(opts);
+  return new Groq({ apiKey: key });
 }
 
 const groqClient = makeGroqClient();

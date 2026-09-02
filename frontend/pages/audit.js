@@ -166,8 +166,8 @@ export default function AuditPage() {
         {/* Header */}
         <div className="audit-page-header">
           <div>
-            <h1 className="audit-page-title">Audit Trail</h1>
-            <p className="audit-page-subtitle">
+            <h1 className="page-title">Audit Trail</h1>
+            <p className="page-subtitle">
               Every action every AI agent takes — timestamped, with reasoning and result.
             </p>
           </div>

@@ -38,7 +38,7 @@ async function createPaymentLink({ amount, description, customer, notes, dbOrder
     const msg = err?.error?.description || err?.message || String(err);
     console.error('[razorpay] createPaymentLink failed:', msg);
     if (msg.includes('undefined') || msg.includes('ECONNREFUSED') || msg.includes('ETIMEDOUT') || msg.includes('ENOTFOUND')) {
-      throw new Error('Cannot reach Razorpay API — check HTTPS_PROXY in .env or try MOCK_RAZORPAY=true');
+      throw new Error('Cannot reach Razorpay API — try setting MOCK_RAZORPAY=true in .env');
     }
     throw new Error(`Razorpay error: ${msg}`);
   }

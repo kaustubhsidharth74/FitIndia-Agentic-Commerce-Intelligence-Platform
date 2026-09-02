@@ -29,8 +29,8 @@ export default function ChatCheckout() {
 
       <div className="container">
         <div style={{ marginBottom: '1.5rem' }}>
-          <h1>Conversational Checkout</h1>
-          <p style={{ color: '#6B7280', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+          <h1 className="page-title">Conversational Checkout</h1>
+          <p className="page-subtitle">
             Direction 1 — Customer types intent, AI finds the product and generates a payment link inside chat.
           </p>
         </div>

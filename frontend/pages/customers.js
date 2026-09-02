@@ -117,8 +117,8 @@ export default function Customers() {
         {/* ── Page Header ── */}
         <div className="cust-header">
           <div>
-            <h1 className="cust-title">Customers</h1>
-            <p className="cust-subtitle">
+            <h1 className="page-title">Customers</h1>
+            <p className="page-subtitle">
               Manage your customer base and run AI-powered upsell campaigns.
             </p>
           </div>

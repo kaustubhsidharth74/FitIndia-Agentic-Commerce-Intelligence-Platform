@@ -8,12 +8,6 @@
 
 require('dotenv').config({ path: '../../.env' });
 
-if (process.env.HTTPS_PROXY) {
-  const https = require('https');
-  const { HttpsProxyAgent } = require('https-proxy-agent');
-  https.globalAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
-}
-
 const { initDB, getDB } = require('./database');
 
 const CUSTOMER_ID = 1;  // Ravi — has a pending Protein Powder order

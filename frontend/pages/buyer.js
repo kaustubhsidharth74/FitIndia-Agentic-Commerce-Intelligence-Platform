@@ -87,8 +87,8 @@ export default function BuyerPage() {
 
       <div className="container">
         <div style={{ marginBottom: '1.5rem' }}>
-          <h1>AI Buyer Agent</h1>
-          <p style={{ color: '#6B7280', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+          <h1 className="page-title">AI Buyer Agent</h1>
+          <p className="page-subtitle">
             Direction 2 — Bot reads <code style={{ color: '#1677C8' }}>GET /api/catalog</code>, reasons about what to buy, and places orders via <code style={{ color: '#1677C8' }}>POST /api/buy</code>.
           </p>
         </div>

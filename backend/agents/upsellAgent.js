@@ -1,7 +1,7 @@
 // Direction 3 — Upsell & Cross-sell Agent
-// Flow: read history → Claude decides upsell → guardrail check → payment link → audit log
+// Flow: read history → Groq decides upsell → guardrail check → payment link → audit log
 
-const Anthropic = require('@anthropic-ai/sdk');
+const Groq = require('groq-sdk');
 const { getDB } = require('../db/database');
 const { createPaymentLink, MOCK: MOCK_RAZORPAY } = require('../razorpayClient');
 
@@ -51,9 +51,9 @@ function mockDecision(customer, orderHistory, catalog) {
   };
 }
 
-// ── Real Claude decision via tool-use ─────────────────────────────────────
-async function claudeDecision(customer, orderHistory, catalog) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// ── Real Groq decision via tool-use ──────────────────────────────────────────
+async function groqDecision(customer, orderHistory, catalog) {
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
   const historyText = orderHistory.length
     ? orderHistory.map(o =>
@@ -65,41 +65,35 @@ async function claudeDecision(customer, orderHistory, catalog) {
     `ID:${p.id} | ${p.name} | ₹${p.price / 100} | ${p.category} | stock:${p.stock}`
   ).join('\n');
 
-  const response = await client.messages.create({
-    model:      'claude-opus-5',
+  const response = await groq.chat.completions.create({
+    model:      'llama-3.3-70b-versatile',
     max_tokens: 1024,
     tools: [{
-      name:        'create_upsell_offer',
-      description: 'Submit your upsell decision for this customer',
-      input_schema: {
-        type: 'object',
-        properties: {
-          product_id: {
-            type:        'integer',
-            description: 'ID of the product to upsell (from the catalog)',
+      type: 'function',
+      function: {
+        name:        'create_upsell_offer',
+        description: 'Submit your upsell decision for this customer',
+        parameters: {
+          type: 'object',
+          properties: {
+            product_id:       { type: 'integer', description: 'ID of the product to upsell (from the catalog)' },
+            discount_percent: { type: 'integer', description: 'Discount percentage to offer (0–30). Use 0 for no discount.' },
+            reasoning:        { type: 'string',  description: 'Your internal reasoning — why this product for this customer' },
+            message:          { type: 'string',  description: 'Short friendly message to the customer (1-2 sentences)' },
           },
-          discount_percent: {
-            type:        'integer',
-            description: 'Discount percentage to offer (0–30). Use 0 for no discount.',
-          },
-          reasoning: {
-            type:        'string',
-            description: 'Your internal reasoning — why this product for this customer',
-          },
-          message: {
-            type:        'string',
-            description: 'Short friendly message to the customer (1-2 sentences)',
-          },
+          required: ['product_id', 'discount_percent', 'reasoning', 'message'],
         },
-        required: ['product_id', 'discount_percent', 'reasoning', 'message'],
       },
     }],
-    tool_choice: { type: 'tool', name: 'create_upsell_offer' },
-    messages: [{
-      role:    'user',
-      content: `You are an AI upsell agent for FitIndia, an Indian fitness e-commerce store.
-
-CUSTOMER:
+    tool_choice: { type: 'function', function: { name: 'create_upsell_offer' } },
+    messages: [
+      {
+        role:    'system',
+        content: 'You are an AI upsell agent for FitIndia, an Indian fitness e-commerce store. Always call the create_upsell_offer tool with your decision.',
+      },
+      {
+        role:    'user',
+        content: `CUSTOMER:
 Name: ${customer.name}
 Email: ${customer.email}
 Type: ${customer.type}
@@ -117,12 +111,13 @@ GUARDRAILS (non-negotiable):
 
 Analyse the customer's purchase history and choose the single best product to upsell or cross-sell.
 Call the create_upsell_offer tool with your decision.`,
-    }],
+      },
+    ],
   });
 
-  const toolUse = response.content.find(b => b.type === 'tool_use');
-  if (!toolUse) throw new Error('Claude did not call the upsell tool');
-  return toolUse.input;
+  const toolCall = response.choices[0].message.tool_calls?.[0];
+  if (!toolCall) throw new Error('Groq did not call the upsell tool');
+  return JSON.parse(toolCall.function.arguments);
 }
 
 // ── Main agent function ───────────────────────────────────────────────────
@@ -147,7 +142,7 @@ async function runUpsellAgent(customerId) {
   try {
     decision = MOCK_AI
       ? mockDecision(customer, orderHistory, catalog)
-      : await claudeDecision(customer, orderHistory, catalog);
+      : await groqDecision(customer, orderHistory, catalog);
   } catch (err) {
     db.prepare(`
       INSERT INTO audit_log (agent, action_type, customer_id, reason, result)

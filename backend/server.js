@@ -1,26 +1,5 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 
-// Route all outbound HTTPS through the corporate proxy.
-// We patch https.request directly because axios (used by Razorpay SDK) sets
-// agent:false which bypasses https.globalAgent — the patch forces the proxy
-// agent onto every outbound HTTPS request regardless.
-if (process.env.HTTPS_PROXY) {
-  const https = require('https');
-  const { HttpsProxyAgent } = require('https-proxy-agent');
-  const proxyAgent = new HttpsProxyAgent(process.env.HTTPS_PROXY);
-  https.globalAgent = proxyAgent;
-
-  const _originalRequest = https.request.bind(https);
-  https.request = function patchedRequest(options, callback) {
-    if (typeof options === 'object') {
-      options.agent = proxyAgent;
-    }
-    return _originalRequest(options, callback);
-  };
-
-  console.log(`Proxy: ${process.env.HTTPS_PROXY}`);
-}
-
 const express = require('express');
 const cors    = require('cors');
 const { initDB } = require('./db/database');

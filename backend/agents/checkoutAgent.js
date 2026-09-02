@@ -1,47 +1,56 @@
 // Direction 1 — Conversational Checkout Agent
-// Customer types intent → Claude searches catalog + creates payment link → confirms in chat
+// Customer types intent → Groq searches catalog + creates payment link → confirms in chat
 
-const Anthropic = require('@anthropic-ai/sdk');
+const Groq = require('groq-sdk');
 const { getDB } = require('../db/database');
 const { createPaymentLink } = require('../razorpayClient');
 
 const MOCK_AI = process.env.MOCK_AI === 'true';
 
-// ── Tool definitions for Claude ───────────────────────────────────────────────
+// ── Tool definitions (OpenAI-compatible format for Groq) ──────────────────────
 const TOOLS = [
   {
-    name:        'search_catalog',
-    description: 'Search the FitIndia product catalog by name or category. Returns matching products with price and stock.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Product name, keyword, or category to search for' },
+    type: 'function',
+    function: {
+      name:        'search_catalog',
+      description: 'Search the FitIndia product catalog by name or category. Returns matching products with price and stock.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Product name, keyword, or category to search for' },
+        },
+        required: ['query'],
       },
-      required: ['query'],
     },
   },
   {
-    name:        'create_payment_link',
-    description: 'Create a Razorpay payment link for the customer to pay for a product. Call this only after confirming the product with the customer.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        product_id:  { type: 'integer', description: 'ID of the product to purchase' },
-        quantity:    { type: 'integer', description: 'Quantity to purchase (default 1)' },
-        customer_id: { type: 'integer', description: 'Customer ID making the purchase' },
+    type: 'function',
+    function: {
+      name:        'create_payment_link',
+      description: 'Create a Razorpay payment link for the customer to pay for a product. Call this only after confirming the product with the customer.',
+      parameters: {
+        type: 'object',
+        properties: {
+          product_id:  { type: 'integer', description: 'ID of the product to purchase' },
+          quantity:    { type: 'integer', description: 'Quantity to purchase (default 1)' },
+          customer_id: { type: 'integer', description: 'Customer ID making the purchase' },
+        },
+        required: ['product_id', 'customer_id'],
       },
-      required: ['product_id', 'customer_id'],
     },
   },
   {
-    name:        'check_payment_status',
-    description: 'Check if a specific order has been paid. Use when the customer says they have completed payment.',
-    input_schema: {
-      type: 'object',
-      properties: {
-        order_id: { type: 'integer', description: 'The DB order ID to check' },
+    type: 'function',
+    function: {
+      name:        'check_payment_status',
+      description: 'Check if a specific order has been paid. Use when the customer says they have completed payment.',
+      parameters: {
+        type: 'object',
+        properties: {
+          order_id: { type: 'integer', description: 'The DB order ID to check' },
+        },
+        required: ['order_id'],
       },
-      required: ['order_id'],
     },
   },
 ];
@@ -164,10 +173,10 @@ async function mockCheckout(messages, customerId) {
   };
 }
 
-// ── Real Claude agentic loop ─────────────────────────────────────────────────
-async function claudeCheckout(messages, customerId) {
-  const client  = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  const db      = getDB();
+// ── Real Groq agentic loop ───────────────────────────────────────────────────
+async function groqCheckout(messages, customerId) {
+  const groq     = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const db       = getDB();
   const customer = db.prepare('SELECT * FROM customers WHERE id = ?').get(customerId);
 
   const systemPrompt = `You are the FitIndia AI shopping assistant. Help customers browse products and complete purchases inside this chat.
@@ -182,63 +191,57 @@ Rules:
 - Be friendly, concise, and helpful
 - All prices are in Indian Rupees (₹)`;
 
-  // Convert frontend messages to Anthropic format
-  const claudeMessages = messages.map(m => ({
-    role:    m.role === 'assistant' ? 'assistant' : 'user',
-    content: m.content,
-  }));
+  let currentMessages = [
+    { role: 'system', content: systemPrompt },
+    ...messages.map(m => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content })),
+  ];
 
-  let currentMessages = [...claudeMessages];
-  let paymentLink     = null;
-  let orderId         = null;
-  let finalReply      = '';
+  let paymentLink = null;
+  let orderId     = null;
+  let finalReply  = '';
 
-  // Agentic loop — max 5 tool calls to prevent runaway
+  // Agentic loop — max 5 iterations
   for (let i = 0; i < 5; i++) {
-    const response = await client.messages.create({
-      model:      'claude-opus-5',
+    const response = await groq.chat.completions.create({
+      model:      'llama-3.3-70b-versatile',
       max_tokens: 1024,
-      system:     systemPrompt,
-      tools:      TOOLS,
       messages:   currentMessages,
+      tools:      TOOLS,
     });
 
-    if (response.stop_reason === 'end_turn') {
-      finalReply = response.content.find(b => b.type === 'text')?.text || '';
+    const msg          = response.choices[0].message;
+    const finishReason = response.choices[0].finish_reason;
+
+    if (finishReason === 'stop' || !msg.tool_calls?.length) {
+      finalReply = msg.content || '';
       break;
     }
 
-    if (response.stop_reason === 'tool_use') {
-      const toolUseBlocks = response.content.filter(b => b.type === 'tool_use');
-      const toolResults   = [];
+    if (finishReason === 'tool_calls') {
+      const toolResults = [];
 
-      for (const block of toolUseBlocks) {
-        const result = await executeTool(block.name, block.input, customerId);
+      for (const toolCall of msg.tool_calls) {
+        const toolName  = toolCall.function.name;
+        const toolInput = JSON.parse(toolCall.function.arguments);
+        const result    = await executeTool(toolName, toolInput, customerId);
 
-        // Capture payment link if one was created
-        if (block.name === 'create_payment_link' && result.success) {
+        if (toolName === 'create_payment_link' && result.success) {
           paymentLink = result.payment_link;
           orderId     = result.order_id;
         }
 
         toolResults.push({
-          type:        'tool_result',
-          tool_use_id: block.id,
-          content:     JSON.stringify(result),
+          role:         'tool',
+          tool_call_id: toolCall.id,
+          content:      JSON.stringify(result),
         });
       }
 
-      // Push assistant response + tool results back into conversation
-      currentMessages = [
-        ...currentMessages,
-        { role: 'assistant', content: response.content },
-        { role: 'user',      content: toolResults },
-      ];
+      currentMessages = [...currentMessages, msg, ...toolResults];
       continue;
     }
 
-    // Unexpected stop — extract any text
-    finalReply = response.content.find(b => b.type === 'text')?.text || 'Something went wrong. Please try again.';
+    finalReply = msg.content || 'Something went wrong. Please try again.';
     break;
   }
 
@@ -253,7 +256,7 @@ async function handleCheckoutMessage({ messages, customerId }) {
   try {
     result = MOCK_AI
       ? await mockCheckout(messages, customerId)
-      : await claudeCheckout(messages, customerId);
+      : await groqCheckout(messages, customerId);
   } catch (err) {
     console.error('[checkout agent] error:', err.message);
     result = { reply: `Agent error: ${err.message}`, paymentLink: null };

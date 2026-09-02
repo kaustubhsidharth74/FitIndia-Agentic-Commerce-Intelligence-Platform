@@ -45,8 +45,8 @@ export default function Campaign() {
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1>Campaign Orchestrator</h1>
-            <p style={{ color: '#6B7280', marginTop: '0.25rem', fontSize: '0.9rem' }}>
+            <h1 className="page-title">Campaign Orchestrator</h1>
+            <p className="page-subtitle">
               Direction 4 — AI scans for abandoned carts and sends personalised recovery payment links.
             </p>
           </div>

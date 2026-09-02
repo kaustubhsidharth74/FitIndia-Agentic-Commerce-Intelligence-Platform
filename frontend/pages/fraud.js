@@ -108,8 +108,8 @@ export default function FraudPage() {
         {/* ── Header ── */}
         <div className="fail-header">
           <div>
-            <h1 className="fail-title">Fraud Detection</h1>
-            <p className="fail-subtitle">
+            <h1 className="page-title">Fraud Detection</h1>
+            <p className="page-subtitle">
               Real-time risk scoring on every order — velocity checks, payment pattern analysis, and auto-blocking.
             </p>
           </div>

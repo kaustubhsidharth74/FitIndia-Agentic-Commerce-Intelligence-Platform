@@ -2470,6 +2470,25 @@ h3 { font-size: 1rem; font-weight: 600; }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SHARED PAGE HEADER
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.page-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -1px;
+  background: linear-gradient(135deg, #1e3a8a, #1677C8, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.25rem;
+}
+.page-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    CATALOG PAGE
    ═══════════════════════════════════════════════════════════════════════════ */
 

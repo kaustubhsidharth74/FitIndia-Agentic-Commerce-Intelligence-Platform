@@ -160,8 +160,8 @@ export default function Catalog() {
         {/* ── Page Header ── */}
         <div className="catalog-header">
           <div>
-            <h1 className="catalog-title">FitIndia Store</h1>
-            <p className="catalog-subtitle">
+            <h1 className="page-title">FitIndia Store</h1>
+            <p className="page-subtitle">
               Premium fitness products &middot; AI-powered checkout
             </p>
           </div>
