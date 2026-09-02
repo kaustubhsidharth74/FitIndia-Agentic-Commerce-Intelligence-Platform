@@ -300,6 +300,7 @@ router.get('/revenue-trend', (_req, res) => {
       CAST(SUM(total_paise) / 100 AS INTEGER)    AS value
     FROM orders
     WHERE status = 'paid'
+      AND strftime('%Y-%m', created_at) < strftime('%Y-%m', 'now')
     GROUP BY month_key
     ORDER BY month_key ASC
     LIMIT 12
