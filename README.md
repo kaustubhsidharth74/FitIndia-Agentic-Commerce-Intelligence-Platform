@@ -1,12 +1,12 @@
 # FitIndia — AI Commerce Intelligence Platform
 
-> **Razorpay Hackathon · Track 01 — AI Growth & Agentic Commerce**
-
 FitIndia is a fully agentic commerce platform built for fitness e-commerce merchants. It replaces manual revenue recovery with **five autonomous AI agents** that work 24/7 — recovering abandoned carts, retrying failed payments, upselling customers with personalized offers, enabling conversational checkout, and making the merchant's catalog fully transactable by an AI buyer without any human in the loop.
 
 Built on **Razorpay test-mode APIs** + **Groq LLM (llama-3.3-70b)** + **Next.js** + **Express**, the platform demonstrates that every rupee an agent touches is explainable, bounded by hard guardrails, and traceable through a complete audit trail.
 
 **Five agents. One audit trail. Zero manual intervention.**
+
+> **NOTE:** Fill in your API keys in `.env` before running. If you don't have them, set `MOCK_RAZORPAY=true` and `MOCK_AI=true`. If you do have them, set both to `false`.
 
 ---
 
