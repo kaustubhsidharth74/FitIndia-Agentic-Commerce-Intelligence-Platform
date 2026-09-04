@@ -58,6 +58,12 @@ FitIndia is a fully agentic commerce platform. Five specialized agents operate a
 
 ---
 
+## Visual Architecture Diagram
+
+View the full interactive system architecture diagram: [fitindia-arch.html](./fitindia-arch.html)
+
+---
+
 ## System Architecture
 
 ```

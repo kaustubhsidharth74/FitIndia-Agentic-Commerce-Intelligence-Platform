@@ -1,640 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FitIndia Architecture</title>
-
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
-
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-:root {
-  --bg:       #EEF3F9;
-  --canvas:   #F8FAFD;
-  --surface:  #FFFFFF;
-  --sf2:      #F2F6FB;
-  --border:   #D6DFEd;
-  --border2:  #B5C3D6;
-  --text:     #192334;
-  --text2:    #445870;
-  --text3:    #8A9CB2;
-
-  --cf: #2E6FD8;
-  --ca: #0B9664;
-  --cg: #C77400;
-  --cs: #C7263A;
-  --cd: #6930C3;
-  --ce: #4E6070;
-
-  --r: 10px;
-  --rs: 6px;
-  --fh: 'Syne', sans-serif;
-  --fb: 'Barlow', sans-serif;
-  --fm: 'JetBrains Mono', monospace;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg:      #090E18;
-    --canvas:  #0C1320;
-    --surface: #111B2C;
-    --sf2:     #162236;
-    --border:  #1A2B42;
-    --border2: #223A57;
-    --text:    #C2D3E6;
-    --text2:   #62809C;
-    --text3:   #324F68;
-
-    --cf: #5BA3F8;
-    --ca: #2FCC90;
-    --cg: #F5B830;
-    --cs: #F47070;
-    --cd: #A07CF8;
-    --ce: #8AA4B8;
-  }
-}
-
-:root[data-theme="dark"] {
-  --bg:      #090E18;
-  --canvas:  #0C1320;
-  --surface: #111B2C;
-  --sf2:     #162236;
-  --border:  #1A2B42;
-  --border2: #223A57;
-  --text:    #C2D3E6;
-  --text2:   #62809C;
-  --text3:   #324F68;
-
-  --cf: #5BA3F8;
-  --ca: #2FCC90;
-  --cg: #F5B830;
-  --cs: #F47070;
-  --cd: #A07CF8;
-  --ce: #8AA4B8;
-}
-
-:root[data-theme="light"] {
-  --bg:       #EEF3F9;
-  --canvas:   #F8FAFD;
-  --surface:  #FFFFFF;
-  --sf2:      #F2F6FB;
-  --border:   #D6DFED;
-  --border2:  #B5C3D6;
-  --text:     #192334;
-  --text2:    #445870;
-  --text3:    #8A9CB2;
-
-  --cf: #2E6FD8;
-  --ca: #0B9664;
-  --cg: #C77400;
-  --cs: #C7263A;
-  --cd: #6930C3;
-  --ce: #4E6070;
-}
-
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-button { font: inherit; cursor: pointer; border: none; background: none; }
 
 body {
-  font-family: var(--fb);
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 15px;
-  line-height: 1.5;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #edf1f7;
+  color: #1a202c;
+  padding: 28px 36px 48px;
+  min-width: 1300px;
 }
 
-.wrap {
-  max-width: 1300px;
-  margin: 0 auto;
-  padding: 32px 24px 72px;
+/* ── Header ── */
+.pg-title { font-size: 17px; font-weight: 700; letter-spacing: -.3px; margin-bottom: 3px; }
+.pg-sub   { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #718096; margin-bottom: 18px; }
+
+.legend { display: flex; align-items: center; gap: 24px; margin-bottom: 22px; }
+.leg { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #4a5568; }
+.arr-solid {
+  display: flex; align-items: center;
+  width: 32px; height: 2px; background: #2563eb; position: relative;
+}
+.arr-solid::after {
+  content: ''; position: absolute; right: -1px; top: -4px;
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+  border-left: 8px solid #2563eb;
+}
+.arr-dashed {
+  width: 30px; height: 0;
+  border-top: 2px dashed #94a3b8;
+  position: relative;
+}
+.arr-dashed::after {
+  content: '▸'; position: absolute; right: -7px; top: -9px;
+  font-size: 9px; color: #94a3b8;
 }
 
-/* Header */
-.ph {
+/* ── Main diagram ── */
+.main-flow {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
-  margin-bottom: 28px;
+  align-items: stretch;
 }
 
-.pt {
-  font-family: var(--fh);
-  font-size: 25px;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.4px;
-  text-wrap: balance;
-  line-height: 1.2;
+/* ── Inter-zone arrows ── */
+.zone-gap {
+  display: flex; align-items: center; justify-content: center;
+  width: 54px; flex-shrink: 0;
+  position: relative;
+}
+.zone-gap-inner {
+  display: flex; align-items: center;
+  width: 38px;
+}
+.gap-line {
+  flex: 1; height: 2px; background: #2563eb;
+}
+.gap-head {
+  width: 0; height: 0;
+  border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+  border-left: 8px solid #2563eb;
 }
 
-.ps {
-  margin-top: 5px;
-  font-family: var(--fm);
-  font-size: 11.5px;
-  color: var(--text3);
-  letter-spacing: 0.2px;
-}
-
-.tbtn {
-  flex-shrink: 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 7px 14px;
-  font-size: 12px;
-  color: var(--text2);
-  transition: color 0.12s, border-color 0.12s;
-}
-.tbtn:hover { color: var(--text); border-color: var(--border2); }
-.tbtn:focus-visible { outline: 2px solid var(--cf); outline-offset: 2px; }
-
-/* Stats */
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 24px;
-}
-
-.stat {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--rs);
-  padding: 11px 18px;
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.sn {
-  font-family: var(--fh);
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.sl {
-  font-size: 12px;
-  color: var(--text3);
-}
-
-/* Legend */
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 28px;
-}
-
-.li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text2);
-}
-
-.lp {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-/* Outer grid */
-.og {
-  display: grid;
-  grid-template-columns: 1fr 298px;
-  gap: 18px;
-  align-items: start;
-}
-
-@media (max-width: 960px) {
-  .og { grid-template-columns: 1fr; }
-}
-
-/* Diagram canvas */
-.dc {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 22px;
-  background: radial-gradient(circle, var(--border) 1px, transparent 1px) var(--canvas);
-  background-size: 28px 28px;
-}
-
-.diagram {
+/* ── Zone containers ── */
+.zone {
+  border-radius: 10px;
+  padding: 14px 13px 12px;
   display: flex;
   flex-direction: column;
 }
 
-/* Layer */
-.layer {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 16px 18px;
-  transition: border-color 0.15s;
+.zone-actors {
+  width: 195px; flex-shrink: 0;
+  border: 2px dashed #d97706;
+  background: #fffbf3;
+}
+.zone-data {
+  width: 215px; flex-shrink: 0;
+  border: 2px dashed #2563eb;
+  background: #f0f5ff;
+}
+.zone-kernel {
+  width: 310px; flex-shrink: 0;
+  border: 2px solid #2563eb;
+  background: #eff6ff;
+}
+.zone-flow {
+  flex: 1;
+  border: 2px solid #16a34a;
+  background: #f0fdf4;
 }
 
-.layer.hl { border-color: var(--lc); }
+.zone-label {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 11px;
+}
+.zone-actors .zone-label { color: #b45309; }
+.zone-data   .zone-label { color: #1d4ed8; }
 
-.lh {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  flex-wrap: wrap;
-  gap: 5px;
+/* ── Boxes ── */
+.box {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  padding: 9px 11px;
+  margin-bottom: 9px;
+}
+.box:last-child { margin-bottom: 0; }
+
+.box-title {
+  font-size: 12px; font-weight: 700;
+  color: #0f172a; margin-bottom: 4px;
+}
+.box-mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px; color: #64748b; line-height: 1.55;
+}
+.box-note {
+  font-size: 9px; color: #94a3b8;
+  font-style: italic; margin-top: 3px;
+}
+.box-path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px; color: #a0aec0; margin-top: 3px;
 }
 
-.ln {
-  font-family: var(--fh);
-  font-size: 9.5px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--lc);
+/* ── Actor boxes ── */
+.actor-box {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 7px; padding: 9px 11px; margin-bottom: 9px;
+}
+.actor-icon {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; flex-shrink: 0; margin-top: 1px;
+}
+.actor-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+.actor-tags { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #64748b; margin-top: 2px; }
+.actor-path { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #a0aec0; margin-top: 2px; }
+
+.zone-footer-note {
+  font-size: 8.5px; color: #94a3b8; font-style: italic;
+  text-align: center; margin-top: 10px;
+  border-top: 1px solid #e5e7eb; padding-top: 7px;
 }
 
-.lt {
-  font-family: var(--fm);
-  font-size: 10.5px;
-  color: var(--text3);
+/* ── Kernel zone ── */
+.kernel-title {
+  font-size: 15px; font-weight: 700;
+  color: #1e3a8a; text-align: center; margin-bottom: 3px;
+}
+.kernel-sub {
+  font-size: 9.5px; color: #64748b;
+  text-align: center; margin-bottom: 11px;
+}
+.checks-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px; margin-bottom: 9px;
+}
+.check {
+  background: #fff; border: 1px solid #bfdbfe;
+  border-radius: 6px; padding: 7px 8px; text-align: center;
+}
+.check-name   { font-size: 10.5px; font-weight: 700; color: #1d4ed8; display: block; }
+.check-detail { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #64748b; display: block; margin-top: 2px; }
+
+.kernel-formula {
+  font-size: 9px; color: #475569; text-align: center;
+  background: rgba(37,99,235,.07); border-radius: 4px;
+  padding: 5px 8px; margin-bottom: 10px;
 }
 
-/* Nodes */
-.nodes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.gates { display: flex; gap: 7px; }
+.gate {
+  flex: 1; text-align: center;
+  border-radius: 6px; border: 2px solid; padding: 7px 5px;
 }
+.gate-allow   { border-color: #16a34a; background: rgba(22,163,74,.09); }
+.gate-allow   .gate-label { font-size: 12px; font-weight: 800; color: #15803d; }
+.gate-allow   .gate-sub   { font-size: 8.5px; color: #16a34a; }
 
-.nb {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  padding: 7px 11px;
-  border-radius: var(--rs);
-  border: 1px solid var(--border);
-  background: var(--sf2);
-  text-align: left;
-  transition: border-color 0.1s, transform 0.1s, box-shadow 0.1s;
-}
+.gate-blocked { border-color: #dc2626; background: rgba(220,38,38,.08); }
+.gate-blocked .gate-label { font-size: 12px; font-weight: 800; color: #b91c1c; }
+.gate-blocked .gate-sub   { font-size: 8.5px; color: #dc2626; }
 
-.nb:hover {
-  border-color: var(--lc);
-  transform: translateY(-1px);
-}
-
-.nb.act {
-  border-color: var(--lc);
-  box-shadow: 0 0 0 1px var(--lc);
-}
-
-.nb:focus-visible { outline: 2px solid var(--lc); outline-offset: 2px; }
-
-.nn {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-}
-
-.nsub {
-  font-size: 10.5px;
-  color: var(--text3);
-  font-family: var(--fm);
-  white-space: nowrap;
-}
-
-/* Split row */
-.sr {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-@media (max-width: 640px) {
-  .sr { grid-template-columns: 1fr; }
-}
-
-/* Arrow */
-.arrow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.as1 { width: 1px; height: 10px; background: var(--border2); }
-.al {
-  font-size: 10px;
-  font-family: var(--fm);
-  color: var(--text3);
-  padding: 2px 0 3px;
-  text-align: center;
-}
-.ap {
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 6px solid var(--border2);
-}
-.as2 { width: 1px; height: 7px; background: var(--border2); }
-
-/* Detail panel */
-.dp {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 22px;
-  position: sticky;
-  top: 24px;
-}
-
-.de {
-  font-size: 13px;
-  color: var(--text3);
+.human-note {
+  font-size: 8.5px; color: #b45309; text-align: center;
+  border-top: 1px dashed #d97706; padding-top: 7px; margin-top: 10px;
   font-style: italic;
-  text-align: center;
-  padding: 52px 12px;
-  line-height: 1.8;
 }
 
-.db {
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1.3px;
-  text-transform: uppercase;
-  font-family: var(--fm);
-  color: var(--dc);
-  margin-bottom: 9px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--dc) 30%, transparent);
-  background: color-mix(in srgb, var(--dc) 8%, transparent);
+/* ── Right flow zone ── */
+.flow-tag {
+  font-size: 8.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .7px; color: #15803d; margin-bottom: 8px;
+}
+.v-arr {
+  display: flex; justify-content: center; padding: 4px 0;
+}
+.v-arr-inner { display: flex; flex-direction: column; align-items: center; }
+.v-line { width: 1.5px; height: 13px; background: #2563eb; }
+.v-tip  { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid #2563eb; }
+
+.fail-label {
+  font-size: 8.5px; color: #dc2626; font-style: italic;
+  text-align: right; margin: 3px 4px 1px;
+}
+.callback-note {
+  font-size: 8.5px; color: #64748b; font-style: italic;
+  text-align: right; margin: 2px 4px 2px;
+}
+.box.green { border-color: #86efac; }
+.box.green .box-title { color: #15803d; }
+.box.orange { border-color: #fdba74; }
+.box.orange .box-title { color: #c2410c; }
+
+/* ── Evidence plane ── */
+.evidence-plane {
+  border: 2px dashed #94a3b8;
+  border-radius: 10px;
+  padding: 13px 15px 11px;
+  margin-top: 18px;
+  background: #f8fafc;
+}
+.evidence-label {
+  font-size: 9px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #64748b; margin-bottom: 11px;
+}
+.evidence-row {
+  display: flex; align-items: stretch; gap: 0;
+}
+.ev-box {
+  flex: 1;
+  background: #fff; border: 1px solid #e2e8f0;
+  border-radius: 7px; padding: 10px 12px;
+}
+.ev-title { font-size: 12px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+.ev-mono  { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; color: #64748b; line-height: 1.55; }
+.ev-path  { font-family: 'JetBrains Mono', monospace; font-size: 8.5px; color: #a0aec0; margin-top: 3px; }
+
+.ev-arrow {
+  display: flex; align-items: center;
+  padding: 0 8px; flex-shrink: 0;
+}
+.ev-arr-line {
+  width: 22px; height: 1.5px; background: #94a3b8; position: relative;
+}
+.ev-arr-line::after {
+  content: ''; position: absolute; right: -1px; top: -3.5px;
+  width: 0; height: 0;
+  border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent;
+  border-left: 6px solid #94a3b8;
+}
+.evidence-foot {
+  display: flex; justify-content: space-between; margin-top: 5px;
+}
+.evidence-foot span { font-size: 8.5px; color: #94a3b8; font-style: italic; }
+
+/* ── Evidence append labels above plane ── */
+.above-plane {
+  display: flex;
+  padding: 0;
+  margin-top: 4px;
+}
+.ap-label {
+  flex: 1; text-align: center;
+  font-size: 8.5px; color: #94a3b8; font-style: italic;
 }
 
-.dtitle {
-  font-family: var(--fh);
-  font-size: 19px;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 9px;
-  text-wrap: balance;
-  line-height: 1.25;
-}
-
-.ddesc {
-  font-size: 13px;
-  color: var(--text2);
-  line-height: 1.65;
-  margin-bottom: 18px;
-}
-
-.ddl {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 7px 12px;
-}
-
-.ddl dt {
-  font-family: var(--fm);
-  font-size: 9.5px;
-  font-weight: 500;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  color: var(--text3);
-  padding-top: 2px;
-  white-space: nowrap;
-}
-
-.ddl dd {
-  font-family: var(--fm);
-  font-size: 11px;
-  color: var(--text2);
-  word-break: break-word;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .nb { transition: none; }
+/* ── Figure caption ── */
+.fig-caption {
+  font-size: 9px; color: #a0aec0;
+  text-align: right; margin-top: 10px; font-style: italic;
 }
 </style>
+</head>
+<body>
 
-<div class="wrap">
-  <header class="ph">
-    <div>
-      <div class="pt">FitIndia Platform Architecture</div>
-      <div class="ps">Node.js · Next.js 14 · Razorpay SDK · Groq LLM (llama-3.3-70b) · SQLite/WASM</div>
+<p class="pg-title">FitIndia · System Architecture</p>
+<p class="pg-sub">razorpay2.0 · Express 4 + Next.js 14 · as-built from source</p>
+
+<div class="legend">
+  <span class="leg"><span class="arr-solid"></span> request / control flow</span>
+  <span class="leg"><span class="arr-dashed"></span> persistence / evidence</span>
+</div>
+
+<!-- ══════════════ MAIN FLOW ══════════════ -->
+<div class="main-flow">
+
+  <!-- ── ZONE 1: ACTORS ── -->
+  <div class="zone zone-actors">
+    <div class="zone-label">Request Actors</div>
+
+    <div class="actor-box">
+      <div class="actor-icon">🤖</div>
+      <div>
+        <div class="actor-name">AI Buyer Agent</div>
+        <div class="actor-tags">Discover · Compare · Propose</div>
+        <div class="actor-path">buyer.js · buyerAgent.js</div>
+      </div>
     </div>
-    <button class="tbtn" onclick="toggleTheme()">Toggle theme</button>
-  </header>
 
-  <div class="stats">
-    <div class="stat"><span class="sn">10</span><span class="sl">frontend pages</span></div>
-    <div class="stat"><span class="sn">5</span><span class="sl">AI agents</span></div>
-    <div class="stat"><span class="sn">6</span><span class="sl">API route groups</span></div>
-    <div class="stat"><span class="sn">5</span><span class="sl">database tables</span></div>
-    <div class="stat"><span class="sn">2</span><span class="sl">external APIs</span></div>
+    <div style="text-align:center;font-size:8.5px;color:#94a3b8;margin:-3px 0 4px;font-style:italic">checkout</div>
+
+    <div class="actor-box">
+      <div class="actor-icon">🏪</div>
+      <div>
+        <div class="actor-name">Merchant Console</div>
+        <div class="actor-tags">Next.js · Human approval</div>
+        <div class="actor-path">pages/index.js</div>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:8.5px;color:#94a3b8;margin:-3px 0 4px;font-style:italic">sign action</div>
+
+    <div class="actor-box">
+      <div class="actor-icon">🔌</div>
+      <div>
+        <div class="actor-name">Public Agent API</div>
+        <div class="actor-tags">Discovery · Catalog · Policy</div>
+        <div class="actor-path">routes/catalog.js</div>
+      </div>
+    </div>
+
+    <div class="zone-footer-note">frontend and agent APIs</div>
   </div>
 
-  <div class="legend">
-    <div class="li"><div class="lp" style="background:var(--cf)"></div>Frontend</div>
-    <div class="li"><div class="lp" style="background:var(--ca)"></div>API Gateway</div>
-    <div class="li"><div class="lp" style="background:var(--cg)"></div>AI Agents</div>
-    <div class="li"><div class="lp" style="background:var(--cs)"></div>Core Services</div>
-    <div class="li"><div class="lp" style="background:var(--cd)"></div>Database</div>
-    <div class="li"><div class="lp" style="background:var(--ce)"></div>External APIs</div>
+  <!-- arrow 1→2 -->
+  <div class="zone-gap"><div class="zone-gap-inner"><div class="gap-line"></div><div class="gap-head"></div></div></div>
+
+  <!-- ── ZONE 2: DATA STRUCTURES ── -->
+  <div class="zone zone-data">
+
+    <div class="box">
+      <div class="box-title">Merchant Checkout Truth</div>
+      <div class="box-mono">SKU · Price · Inventory<br>Currency · Payee · Hash</div>
+      <div class="box-note">Server-authoritative snapshot</div>
+      <div class="box-path">routes/catalog.js · razorpay.js</div>
+    </div>
+
+    <div class="box">
+      <div class="box-title">Agent Request Envelope</div>
+      <div class="box-mono">Agent · Tool-call · Payload<br>SKU · Quantity · Timestamp</div>
+      <div class="box-note">Groq tool-use structured output</div>
+      <div class="box-path">agents/ · groq-sdk ^1.6.0</div>
+    </div>
+
+    <div class="zone-footer-note">merchant and agent APIs</div>
   </div>
 
-  <div class="og">
-    <div class="dc">
-      <div class="diagram" id="diagram"></div>
+  <!-- arrow 2→3 -->
+  <div class="zone-gap"><div class="zone-gap-inner"><div class="gap-line"></div><div class="gap-head"></div></div></div>
+
+  <!-- ── ZONE 3: GUARDRAILS KERNEL ── -->
+  <div class="zone zone-kernel">
+    <div class="kernel-title">Guardrails Kernel</div>
+    <div class="kernel-sub">All checks evaluated and persisted before every Razorpay call</div>
+
+    <div class="checks-grid">
+      <div class="check">
+        <span class="check-name">Fraud Check</span>
+        <span class="check-detail">fraudScorer.js<br>5 signals · t/h 80</span>
+      </div>
+      <div class="check">
+        <span class="check-name">Spend Limit</span>
+        <span class="check-detail">guardrails.js<br>max ₹5,000</span>
+      </div>
+      <div class="check">
+        <span class="check-name">Upsell Cap</span>
+        <span class="check-detail">guardrails.js<br>max 30% disc.</span>
+      </div>
+      <div class="check">
+        <span class="check-name">Retry Guard</span>
+        <span class="check-detail">guardrails.js<br>retry_enabled</span>
+      </div>
+      <div class="check">
+        <span class="check-name">Reminder Limit</span>
+        <span class="check-detail">guardrails.js<br>max 3 / order</span>
+      </div>
+      <div class="check">
+        <span class="check-name">Mock Gate</span>
+        <span class="check-detail">mockState.js<br>MOCK_RAZORPAY</span>
+      </div>
     </div>
-    <aside class="dp" id="dp">
-      <div class="de">Click any node<br>to see details</div>
-    </aside>
+
+    <div class="kernel-formula">
+      Code-level blocks · LLM cannot override · Hard-gated
+    </div>
+
+    <div class="gates">
+      <div class="gate gate-allow">
+        <div class="gate-label">ALLOW</div>
+        <div class="gate-sub">all checks pass</div>
+      </div>
+      <div class="gate gate-blocked">
+        <div class="gate-label">BLOCKED</div>
+        <div class="gate-sub">0 Razorpay calls</div>
+      </div>
+    </div>
+
+    <div class="human-note">explicit human approval via Merchant Console</div>
+  </div>
+
+  <!-- arrow 3→4 -->
+  <div class="zone-gap"><div class="zone-gap-inner"><div class="gap-line"></div><div class="gap-head"></div></div></div>
+
+  <!-- ── ZONE 4: PAYMENT FLOW ── -->
+  <div class="zone zone-flow">
+    <div class="flow-tag">One order per agent call · Reachable only after ALLOW</div>
+
+    <div class="box green">
+      <div class="box-title">Order · Checkout · Payment</div>
+      <div class="box-mono">Reachable only after ALLOW</div>
+      <div class="box-path">razorpayClient.js · routes/razorpay.js</div>
+    </div>
+
+    <div class="callback-note">verified callback / webhook ↓</div>
+
+    <div class="v-arr"><div class="v-arr-inner"><div class="v-line"></div><div class="v-tip"></div></div></div>
+
+    <div class="box">
+      <div class="box-title">Payment Verification</div>
+      <div class="box-mono">Signature · HMAC · State<br>Amount and currency binding</div>
+      <div class="box-path">routes/webhook.js</div>
+    </div>
+
+    <div class="fail-label">failure ↓</div>
+
+    <div class="v-arr"><div class="v-arr-inner"><div class="v-line"></div><div class="v-tip"></div></div></div>
+
+    <div class="box orange">
+      <div class="box-title">Retry Workflow</div>
+      <div class="box-mono">New payment link · Same order<br>Same guardrails kernel<br>Cannot expand amount or merchant</div>
+      <div class="box-path">agents/retryAgent.js</div>
+    </div>
+  </div>
+
+</div><!-- /main-flow -->
+
+<!-- above-plane labels -->
+<div class="above-plane">
+  <div class="ap-label">append decision evidence</div>
+  <div class="ap-label">payment and recovery state</div>
+</div>
+
+<!-- ══════════════ PERSISTENT EVIDENCE PLANE ══════════════ -->
+<div class="evidence-plane">
+  <div class="evidence-label">Persistent Evidence Plane</div>
+
+  <div class="evidence-row">
+    <div class="ev-box">
+      <div class="ev-title">SQLite State</div>
+      <div class="ev-mono">Transactions · Nonces<br>Payments · Stock</div>
+      <div class="ev-path">db/fitindia.db · sql.js WASM</div>
+    </div>
+
+    <div class="ev-arrow"><div class="ev-arr-line"></div></div>
+
+    <div class="ev-box">
+      <div class="ev-title">Audit Log</div>
+      <div class="ev-mono">Agent actions · Results<br>Payloads · Timestamps</div>
+      <div class="ev-path">audit_log · db/database.js</div>
+    </div>
+
+    <div class="ev-arrow"><div class="ev-arr-line"></div></div>
+
+    <div class="ev-box">
+      <div class="ev-title">Fraud Scorer</div>
+      <div class="ev-mono">Intent · Signals · Risk score<br>block / approve state</div>
+      <div class="ev-path">utils/fraudScorer.js · t/h 80</div>
+    </div>
+
+    <div class="ev-arrow"><div class="ev-arr-line"></div></div>
+
+    <div class="ev-box">
+      <div class="ev-title">Dashboard Telemetry</div>
+      <div class="ev-mono">Allowed · Blocked · Revenue<br>Activity feed · GMV</div>
+      <div class="ev-path">pages/index.js · /api/agent/stats</div>
+    </div>
+  </div>
+
+  <div class="evidence-foot">
+    <span></span>
+    <span>merchant-scoped and queryable</span>
   </div>
 </div>
 
-<script>
-const D = {
-  frontend: {
-    id:'frontend', name:'Frontend', tech:'Next.js 14 · React 18 · port 3000', color:'var(--cf)',
-    nodes:[
-      { id:'pg-dashboard', name:'Dashboard', sub:'/', desc:'Merchant command centre. Stat tiles for revenue, pending orders, alerts, and active agents. SVG revenue chart with catmull-rom smoothing, donut agent activity chart, full transaction table, and live-editable guardrail settings panel.', meta:{ File:'pages/index.js', Refresh:'5 s auto-poll', 'Status sync':'10 s Razorpay sync', Tabs:'Overview / Activity / Settings' } },
-      { id:'pg-catalog', name:'Catalog', sub:'/catalog', desc:'Browseable fitness product store with category filter, customer selector dropdown, multi-item cart, and checkout via POST /api/razorpay/cart. Manual payment status sync included.', meta:{ File:'pages/catalog.js', 'API calls':'/api/catalog · /api/razorpay/cart', Features:'Cart · category filter · customer selector' } },
-      { id:'pg-chat', name:'Chat', sub:'/chat', desc:'Conversational checkout UI. Customer types natural language; the AI Checkout Agent returns a formatted Pay Now button in the chat thread.', meta:{ File:'pages/chat.js', Component:'ChatBox.js', 'API call':'POST /api/agent/chat' } },
-      { id:'pg-buyer', name:'AI Buyer', sub:'/buyer', desc:'Kicks off the autonomous B2B buyer bot with a preset or custom goal. Shows order results and payment links after up to 8 reasoning iterations.', meta:{ File:'pages/buyer.js', 'API call':'POST /api/agent/buyer', 'Max iters':'8' } },
-      { id:'pg-customers', name:'Customers', sub:'/customers', desc:'Customer list with full per-customer order history. Per-customer upsell trigger button surfaces AI reasoning and a generated payment link.', meta:{ File:'pages/customers.js', 'API calls':'/api/agent/customers · POST /api/agent/upsell' } },
-      { id:'pg-campaign', name:'Campaign', sub:'/campaign', desc:'One-click campaign run scans all pending orders and generates personalised recovery messages with payment links, labelled with an AI-assigned tone.', meta:{ File:'pages/campaign.js', 'API call':'POST /api/agent/campaign', Target:'Orders older than CAMPAIGN_MIN_AGE_HOURS' } },
-      { id:'pg-failures', name:'Failures', sub:'/failures', desc:'Simulate payment failures, retry orders, and force a second failure to trigger merchant alerts. Displays a step-by-step agent action log.', meta:{ File:'pages/failures.js', 'API calls':'/api/agent/simulate-failure · /api/agent/retry', Alert:'2nd failure → merchant_alert in audit_log' } },
-      { id:'pg-audit', name:'Audit', sub:'/audit', desc:'Filterable audit trail across all agents. Filter by agent name or result type, sorted and paginated at 12 entries per page with summary stats.', meta:{ File:'pages/audit.js', Pagination:'12 per page', Filters:'Agent name · result type · sort order' } },
-      { id:'pg-fraud', name:'Fraud', sub:'/fraud', desc:'Fraud detection dashboard. Every order shown with a 0–100 risk score bar, risk reason tags, and block/approve action buttons. Filter by risk level.', meta:{ File:'pages/fraud.js', 'API calls':'/api/fraud/orders · block · approve', 'Auto-block':'Score ≥ 80' } },
-      { id:'pg-demo', name:'Demo', sub:'/demo', desc:'Guided walkthrough covering all five product directions with step-by-step execution controls — the main product demo surface.', meta:{ File:'pages/demo.js', Purpose:'Structured guided product demo' } },
-    ]
-  },
-  api: {
-    id:'api', name:'API Gateway', tech:'Express 4.18 · port 4000 · CORS from port 3000', color:'var(--ca)',
-    nodes:[
-      { id:'r-razorpay', name:'/api/razorpay', sub:'8 endpoints', desc:'Payment flow router. Handles order creation, cart checkout, payment link generation, order listing, status sync, and mock payment resolution for local dev.', meta:{ File:'routes/razorpay.js', POST:'/order · /buy · /cart · /payment-link · /mock-pay · /sync-status', GET:'/orders · /orders/:id' } },
-      { id:'r-agent', name:'/api/agent', sub:'15 endpoints', desc:'Agent orchestration router. All AI agent triggers, the audit log, customer data, stats, alerts, activity feed, live-editable guardrail read/write, and failure simulation.', meta:{ File:'routes/agent.js', Agents:'POST /buyer · /upsell · /campaign · /chat', Admin:'GET /audit · /stats · /alerts · /activity · /revenue-trend', Config:'POST /guardrails · /simulate-failure · /retry' } },
-      { id:'r-catalog', name:'/api/catalog', sub:'3 endpoints', desc:'Machine-readable product catalog for agents and the frontend. List all products, fetch one by ID, or direct-buy without a cart.', meta:{ File:'routes/catalog.js', Endpoints:'GET / · GET /:id · POST /buy' } },
-      { id:'r-webhook', name:'/api/webhook', sub:'Razorpay events', desc:'Webhook receiver for Razorpay-pushed events. Updates order status in SQLite on payment capture, failure, or link expiry. Signature check is skipped in dev (WEBHOOK_SECRET empty).', meta:{ File:'routes/webhook.js', Events:'payment_link.paid · payment.captured · payment.failed · payment_link.expired/cancelled', Note:'Signature check skipped — WEBHOOK_SECRET empty in .env' } },
-      { id:'r-fraud', name:'/api/fraud', sub:'4 endpoints', desc:'Fraud review API. Returns all orders with computed risk scores and reasons, plus block and approve actions for individual orders.', meta:{ File:'routes/fraud.js', Endpoints:'GET /orders · GET /stats · POST /scan/:id · /block/:id · /approve/:id' } },
-      { id:'r-config', name:'/api/config', sub:'runtime toggle', desc:'Mock flag reader and writer. GET returns current MOCK_RAZORPAY and MOCK_AI state. POST toggles them live — flags are read at call-time so no restart is needed.', meta:{ File:'routes/config.js', Flags:'MOCK_RAZORPAY · MOCK_AI', Effect:'Live toggle — read at call-time, not import-time' } },
-    ]
-  },
-  agents: {
-    id:'agents', name:'AI Agents', tech:'Groq SDK · llama-3.3-70b-versatile', color:'var(--cg)',
-    nodes:[
-      { id:'ag-checkout', name:'Checkout Agent', sub:'tool-use loop', desc:'Conversational checkout via Groq tool-use. Three tools: search_catalog, create_payment_link, check_payment_status. Loops until a payment link is created or an error occurs.', meta:{ File:'agents/checkoutAgent.js', Tools:'search_catalog · create_payment_link · check_payment_status', Model:'llama-3.3-70b-versatile', Mock:'MOCK_AI=true → canned response' } },
-      { id:'ag-buyer', name:'Buyer Bot', sub:'autonomous · 8 iters', desc:'Autonomous B2B buyer that browses the catalog, reasons about a purchase goal, and places orders without human input. Loops up to 8 reasoning iterations. Customer type is always "bot".', meta:{ File:'agents/buyerAgent.js', 'Max iters':'8', 'Customer type':'bot', Model:'llama-3.3-70b-versatile' } },
-      { id:'ag-upsell', name:'Upsell Agent', sub:'guardrail-checked', desc:'Reads a customer\'s order history, selects an upsell or cross-sell offer, checks guardrail limits (max 30% discount), then issues a payment link with AI reasoning surfaced to the merchant.', meta:{ File:'agents/upsellAgent.js', Guardrail:'max_upsell_discount_pct (default 30%)', Tool:'create_upsell_offer', Model:'llama-3.3-70b-versatile' } },
-      { id:'ag-campaign', name:'Campaign Agent', sub:'recovery flow', desc:'Scans pending orders older than CAMPAIGN_MIN_AGE_HOURS, generates a personalised recovery message per order with an AI-assigned tone label, issues fresh payment links, and logs conversions on the next run.', meta:{ File:'agents/campaignAgent.js', Model:'llama-3.3-70b-versatile', Env:'CAMPAIGN_MIN_AGE_HOURS (default 0 = all pending)', Conversions:'Checked on next campaign run' } },
-      { id:'ag-retry', name:'Retry Agent', sub:'rule-based · no LLM', desc:'Marks an order failed, creates a new payment link, and on a second failure raises a merchant_alert audit entry. Pure deterministic rule logic — no Groq call.', meta:{ File:'agents/retryAgent.js', Logic:'Rule-based only — no LLM call', '2nd failure':'Raises merchant_alert in audit_log', Guardrail:'retry_enabled flag in guardrails.js' } },
-    ]
-  },
-  services: {
-    id:'services', name:'Core Services', tech:'SDK wrappers · in-process modules', color:'var(--cs)',
-    nodes:[
-      { id:'sv-razorpay', name:'Razorpay Client', sub:'razorpayClient.js', desc:'Wraps the official Razorpay SDK with a live/mock switch. Reads mockState at call-time (not at import-time) so toggling via /api/config takes effect immediately without a server restart.', meta:{ File:'razorpayClient.js', Exports:'createPaymentLink · createOrder · listOrders · fetchPaymentLink', 'Mock flag':'mockState.MOCK_RAZORPAY (live-editable)' } },
-      { id:'sv-fraud', name:'Fraud Scorer', sub:'fraudScorer.js', desc:'Scores orders 0–100 across five risk signals: card testing (multiple failures before success), velocity (3+ orders/hour), bot customer with high-value order, order value 5× above average, new customer first order over ₹3000.', meta:{ File:'utils/fraudScorer.js', Signals:'Card testing · velocity · bot+high-value · 5× avg · new >₹3000', 'Auto-block':'Score ≥ 80' } },
-      { id:'sv-guardrails', name:'Guardrails', sub:'config/guardrails.js', desc:'In-memory agent limits editable at runtime via POST /api/agent/guardrails — no restart required. Limits include max upsell discount, max auto-approve amount, max reminders per order, and retry enabled flag.', meta:{ File:'config/guardrails.js', Limits:'max_upsell_discount_pct=30% · max_auto_approve_inr=₹5000 · max_reminders_per_order=3 · retry_enabled=true' } },
-      { id:'sv-mock', name:'Mock Layer', sub:'config/mockState.js', desc:'Runtime boolean flags for MOCK_RAZORPAY and MOCK_AI. Seeded from .env at startup, toggleable live via the frontend Nav sidebar or directly via POST /api/config.', meta:{ File:'config/mockState.js', Default:'Both true in .env (safe dev baseline)', Toggle:'Nav sidebar or POST /api/config' } },
-    ]
-  },
-  data: {
-    id:'data', name:'Database', tech:'SQLite · sql.js WASM · backend/db/fitindia.db', color:'var(--cd)',
-    nodes:[
-      { id:'tb-products', name:'products', sub:'table', desc:'Fitness product catalogue. Stores name, description, price in paise, category, and stock count. Seeded at server startup via initDB().', meta:{ Cols:'id · name · description · price_paise · category · stock', Seeded:'Yes — initDB() at startup' } },
-      { id:'tb-customers', name:'customers', sub:'table', desc:'Human and bot customer records. The type field separates real buyers from AI buyer bot accounts used by the Buyer Agent.', meta:{ Cols:'id · name · email · phone · type (human|bot)' } },
-      { id:'tb-orders', name:'orders', sub:'table', desc:'All purchase orders with full status lifecycle. Stores Razorpay payment link ID and URL alongside local order state.', meta:{ Cols:'id · customer_id · product_id · quantity · total_paise · status · razorpay_order_id · payment_link_id · payment_link_url · created_at', Statuses:'pending / paid / failed / cancelled / held' } },
-      { id:'tb-items', name:'order_items', sub:'table', desc:'Line items for multi-product cart checkouts. Each row is one product in a cart order linked to the parent orders row.', meta:{ Cols:'id · order_id · product_id · quantity · unit_price_paise', Usage:'Cart checkout via POST /api/razorpay/cart' } },
-      { id:'tb-audit', name:'audit_log', sub:'table', desc:'Immutable record of every agent action. Stores agent name, action type, customer, order, amount in paise, human-readable reason, result, and full JSON metadata blob.', meta:{ Cols:'id · agent · action · customer_id · order_id · amount_paise · reason · result · metadata_json · created_at', Agents:'checkout · buyer · upsell · campaign · retry · fraud' } },
-    ]
-  },
-  external: {
-    id:'external', name:'External APIs', tech:'HTTPS outbound · https-proxy-agent on TE network', color:'var(--ce)',
-    nodes:[
-      { id:'ex-razorpay', name:'Razorpay API', sub:'test mode', desc:'Razorpay payment infrastructure — creates and monitors payment links and orders. Running in test mode. MOCK_RAZORPAY=true bypasses all real calls; the app runs without network access when mock is on.', meta:{ SDK:'razorpay npm package', Keys:'rzp_test_* credentials in .env', Mock:'MOCK_RAZORPAY=true → no real API calls', Proxy:'https-proxy-agent applied on TE network' } },
-      { id:'ex-groq', name:'Groq API', sub:'llama-3.3-70b', desc:'LLM inference via Groq — powers all five AI agents. MOCK_AI=true returns canned responses without hitting the API. Note: @anthropic-ai/sdk is installed as a dependency but Groq is the actual runtime LLM provider.', meta:{ SDK:'groq-sdk npm package', Model:'llama-3.3-70b-versatile', Mock:'MOCK_AI=true → canned responses, no API call', Note:'@anthropic-ai/sdk installed but unused at runtime' } },
-    ]
-  }
-};
+<p class="fig-caption">Figure 1 · FitIndia as-built reference architecture · razorpay2.0</p>
 
-function buildLayer(layer) {
-  const el = document.createElement('div');
-  el.className = 'layer';
-  el.style.setProperty('--lc', layer.color);
-  el.dataset.lid = layer.id;
-
-  const lh = document.createElement('div');
-  lh.className = 'lh';
-
-  const ln = document.createElement('div');
-  ln.className = 'ln';
-  ln.textContent = layer.name;
-
-  const lt = document.createElement('div');
-  lt.className = 'lt';
-  lt.textContent = layer.tech;
-
-  lh.appendChild(ln);
-  lh.appendChild(lt);
-  el.appendChild(lh);
-
-  const ns = document.createElement('div');
-  ns.className = 'nodes';
-
-  layer.nodes.forEach(node => {
-    const btn = document.createElement('button');
-    btn.className = 'nb';
-    btn.style.setProperty('--lc', layer.color);
-    btn.dataset.nid = node.id;
-    btn.onclick = () => pick(node, layer);
-
-    const nn = document.createElement('div');
-    nn.className = 'nn';
-    nn.textContent = node.name;
-
-    const ns2 = document.createElement('div');
-    ns2.className = 'nsub';
-    ns2.textContent = node.sub;
-
-    btn.appendChild(nn);
-    btn.appendChild(ns2);
-    ns.appendChild(btn);
-  });
-
-  el.appendChild(ns);
-  return el;
-}
-
-function mkArrow(label) {
-  const el = document.createElement('div');
-  el.className = 'arrow';
-  el.innerHTML = `<div class="as1"></div><div class="al">${label}</div><div class="ap"></div><div class="as2"></div>`;
-  return el;
-}
-
-function pick(node, layer) {
-  document.querySelectorAll('.nb.act').forEach(b => b.classList.remove('act'));
-  document.querySelectorAll('.layer.hl').forEach(l => l.classList.remove('hl'));
-
-  const btn = document.querySelector(`[data-nid="${node.id}"]`);
-  if (btn) btn.classList.add('act');
-
-  const layerEl = document.querySelector(`[data-lid="${layer.id}"]`);
-  if (layerEl) layerEl.classList.add('hl');
-
-  const panel = document.getElementById('dp');
-  panel.style.setProperty('--dc', layer.color);
-
-  let h = `<div class="db">${layer.name}</div><div class="dtitle">${node.name}</div><div class="ddesc">${node.desc}</div>`;
-  if (node.meta && Object.keys(node.meta).length) {
-    h += `<dl class="ddl">`;
-    for (const [k, v] of Object.entries(node.meta)) {
-      h += `<dt>${k}</dt><dd>${v}</dd>`;
-    }
-    h += `</dl>`;
-  }
-  panel.innerHTML = h;
-}
-
-function toggleTheme() {
-  const r = document.documentElement;
-  const isDark = r.getAttribute('data-theme') === 'dark' ||
-    (!r.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  r.setAttribute('data-theme', isDark ? 'light' : 'dark');
-}
-
-function init() {
-  const d = document.getElementById('diagram');
-
-  d.appendChild(buildLayer(D.frontend));
-  d.appendChild(mkArrow('HTTP REST · native fetch() · no library'));
-
-  d.appendChild(buildLayer(D.api));
-  d.appendChild(mkArrow('module calls · route handler dispatch'));
-
-  const mid = document.createElement('div');
-  mid.className = 'sr';
-  mid.appendChild(buildLayer(D.agents));
-  mid.appendChild(buildLayer(D.services));
-  d.appendChild(mid);
-
-  d.appendChild(mkArrow('sql.js WASM queries + HTTPS to external APIs'));
-
-  const bot = document.createElement('div');
-  bot.className = 'sr';
-  bot.appendChild(buildLayer(D.data));
-  bot.appendChild(buildLayer(D.external));
-  d.appendChild(bot);
-}
-
-init();
-</script>
+</body>
+</html>
