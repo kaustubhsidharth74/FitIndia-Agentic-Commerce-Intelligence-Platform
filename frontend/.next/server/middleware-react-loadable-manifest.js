@@ -1,1 +1,0 @@
-self.__REACT_LOADABLE_MANIFEST="{\"pages\\\\index.js -> ../components/ParticleSphere\":{\"id\":\"pages\\\\index.js -> ../components/ParticleSphere\",\"files\":[\"static/chunks/components_ParticleSphere_jsx.js\"]}}"
